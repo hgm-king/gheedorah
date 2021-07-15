@@ -42,43 +42,41 @@ impl NewShopifyIntegration {
     }
 
     pub fn insert(&self, conn: &PgConnection) -> ShopifyIntegration {
-        create(conn, self)
+        create(conn, self).unwrap()
     }
 }
 
 pub fn create(
     conn: &PgConnection,
     new_shopify_integration: &NewShopifyIntegration,
-) -> ShopifyIntegration {
+) -> Result<ShopifyIntegration, diesel::result::Error> {
     diesel::insert_into(shopify_integrations::table)
         .values(new_shopify_integration)
         .get_result(conn)
-        .expect("Error saving new shopify_integration")
 }
 
-pub fn read(conn: &PgConnection) -> Vec<ShopifyIntegration> {
-    shopify_integrations::table
-        .load::<ShopifyIntegration>(conn)
-        .expect("Error loading shopify_integration")
+pub fn read(conn: &PgConnection) -> Result<Vec<ShopifyIntegration>, diesel::result::Error> {
+    shopify_integrations::table.load::<ShopifyIntegration>(conn)
 }
 
-pub fn read_by_shop(conn: &PgConnection, shop: String) -> Vec<ShopifyIntegration> {
+pub fn read_by_shop(
+    conn: &PgConnection,
+    shop: String,
+) -> Result<Vec<ShopifyIntegration>, diesel::result::Error> {
     shopify_integrations::table
         .filter(shopify_integrations::shop.eq(shop))
         .load::<ShopifyIntegration>(conn)
-        .expect("Error loading shopify_integration")
 }
 
 pub fn read_by_shop_and_nonce(
     conn: &PgConnection,
     shop: String,
     nonce: String,
-) -> Vec<ShopifyIntegration> {
+) -> Result<Vec<ShopifyIntegration>, diesel::result::Error> {
     shopify_integrations::table
         .filter(shopify_integrations::shop.eq(shop))
         .filter(shopify_integrations::nonce.eq(nonce))
         .load::<ShopifyIntegration>(conn)
-        .expect("Error loading shopify_integration")
 }
 
 pub fn update_access_token(
@@ -116,7 +114,7 @@ mod tests {
     fn it_creates_a_shopify_integration() {
         let conn = establish_test_connection();
 
-        create(&conn, &mock_struct());
+        create(&conn, &mock_struct()).unwrap();
 
         let shopify_integration = shopify_integrations::table
             .load::<ShopifyIntegration>(&conn)
@@ -138,7 +136,7 @@ mod tests {
             .get_result::<ShopifyIntegration>(&conn)
             .expect("Error saving new shopify_integration");
 
-        let shopify_integration = read(&conn);
+        let shopify_integration = read(&conn).unwrap();
 
         assert!(0 < shopify_integration.len());
 
@@ -160,12 +158,12 @@ mod tests {
 
         // make 2 shopify_integrations, each with different categories
         let mut new_shopify_integration = mock_struct();
-        create(&conn, &new_shopify_integration);
+        create(&conn, &new_shopify_integration).unwrap();
 
         new_shopify_integration.shop = shop.clone();
-        create(&conn, &new_shopify_integration);
+        create(&conn, &new_shopify_integration).unwrap();
 
-        let shopify_integration = read_by_shop(&conn, shop.clone());
+        let shopify_integration = read_by_shop(&conn, shop.clone()).unwrap();
 
         assert_eq!(1, shopify_integration.len());
 
@@ -186,13 +184,13 @@ mod tests {
 
         // make 2 shopify_integrations, each with different categories
         let mut new_shopify_integration = mock_struct();
-        create(&conn, &new_shopify_integration);
+        create(&conn, &new_shopify_integration).unwrap();
 
         new_shopify_integration.nonce = nonce.clone();
-        create(&conn, &new_shopify_integration);
+        create(&conn, &new_shopify_integration).unwrap();
 
         let shopify_integration =
-            read_by_shop_and_nonce(&conn, String::from("ShopName"), nonce.clone());
+            read_by_shop_and_nonce(&conn, String::from("ShopName"), nonce.clone()).unwrap();
 
         assert_eq!(1, shopify_integration.len());
 
@@ -209,12 +207,12 @@ mod tests {
     fn it_updates_a_shopify_integration_access_token() {
         let conn = establish_test_connection();
 
-        let shopify_integration = create(&conn, &mock_struct());
+        let shopify_integration = create(&conn, &mock_struct()).unwrap();
         let access_token = String::from("super ssssecret");
 
         update_access_token(&conn, &shopify_integration, access_token.clone());
 
-        let shopify_integrations = read_by_shop(&conn, shopify_integration.shop);
+        let shopify_integrations = read_by_shop(&conn, shopify_integration.shop).unwrap();
 
         assert_eq!(1, shopify_integrations.len());
         let my_shopify_integration = shopify_integrations

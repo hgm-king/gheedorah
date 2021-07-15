@@ -1,8 +1,8 @@
 use env_logger::Env;
 use log::info;
 use sidecar::{
-    db_conn::DbConn,
     config::{generate_config, Config},
+    db_conn::DbConn,
     handlers::health_handler,
     routes::health_route,
 };

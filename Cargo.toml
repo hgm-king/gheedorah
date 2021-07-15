@@ -10,9 +10,11 @@ mocks = []
 
 [dependencies]
 chrono = "0.4"
+crypto-mac = "0.11.0"
 diesel = { version = "1.4.4", features = ["chrono", "postgres", "r2d2"] }
 dotenv = "0.15.0"
 env_logger = "0.8.4"
+hex = "0.4.3"
 hmac = "0.11.0"
 lazy-regex = "2.2.1"
 log = "0.4.14"
