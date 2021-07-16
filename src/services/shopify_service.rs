@@ -1,6 +1,6 @@
 use crate::{
-    config::Config, db_conn::DbConn, models::shopify_integration, AccessTokenResponse,
-    ConfirmQueryParams,
+    config::Config, db_conn::DbConn, models::shopify_integration, utils::gen_uuid,
+    AccessTokenResponse, ConfirmQueryParams, InstallQueryParams,
 };
 use hmac::{Hmac, Mac, NewMac};
 use lazy_regex::regex;
@@ -8,6 +8,7 @@ use reqwest::Client;
 use sha2::Sha256;
 use std::error::Error;
 use std::sync::Arc;
+use warp::http::Uri;
 
 pub async fn get_access_token(
     client: Arc<Client>,
@@ -25,7 +26,8 @@ pub async fn get_access_token(
     Ok(access_token_json)
 }
 
-pub fn is_valid_shop_domain(params: ConfirmQueryParams) -> bool {
+// need to confirm that the domain coming from params is from shopify
+pub fn is_valid_shop_domain(params: &ConfirmQueryParams) -> bool {
     let r = regex!("^[a-zA-Z0-9][a-zA-Z0-9\\-]*\\.myshopify\\.com$");
     r.is_match(&params.shop)
 }
@@ -66,6 +68,20 @@ pub fn find_shopify_integration_request_from_params(
     }
 }
 
+// let uri = if config.is_mocking {
+//     config.shopify_api_uri.clone()
+// } else {
+//     format!("{}{}", config.shopify_api_uri.clone(), params.shop)
+// };
+//
+// let access_token_json = shopify_service::get_access_token(client.clone(), form_body, uri)
+//     .await
+//     .expect("Could not fetch access token!");
+//
+// // update the shop here
+// shopify_connection::update_access_token(&conn, &shop_conn, access_token_json.access_token)
+//     .expect("Could not insert to db");
+
 // to verify the hmac, we need to turn the query params into the following shape
 // "code=0907a61c0c8d55e99db179b68161bc00&shop=some-shop.myshopify.com&state=0.6784241404160823&timestamp=1337178173"
 fn convert_query_params_to_hmac_code(params: &ConfirmQueryParams) -> String {
@@ -76,6 +92,42 @@ fn convert_query_params_to_hmac_code(params: &ConfirmQueryParams) -> String {
         params.state.clone(),
         params.timestamp.clone()
     )
+}
+
+// setup the form body to request the access token from shopify api
+fn form_body_from_args(api_key: String, api_secret: String, code: String) -> Vec<(String, String)> {
+    vec![
+        (String::from("client_id"), api_key),
+        (String::from("client_secret"), api_secret),
+        (String::from("code"), code),
+    ]
+}
+
+pub async fn shopify_install(
+    params: InstallQueryParams,
+    config: Arc<Config>,
+    db_conn: Arc<DbConn>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let nonce = gen_uuid();
+    let conn = &db_conn.get_conn();
+
+    // save install request in db to verify later
+    shopify_integration::NewShopifyIntegration::new(params.shop.clone(), nonce.clone())
+        .insert(conn);
+
+    // uri for the conform install page
+    let formatted_uri = format!(
+        "https://{}/admin/oauth/authorize?client_id={}&scope={}&redirect_uri={}&state={}",
+        params.shop,
+        config.shopify_api_key,
+        "read_orders,write_orders", // probably want to be config
+        "https://localhost:3030/shopify_confirm", // probably want to be config
+        nonce,
+    );
+
+    Ok(warp::redirect(
+        String::from(formatted_uri).parse::<Uri>().unwrap(),
+    ))
 }
 
 #[cfg(test)]
@@ -93,7 +145,7 @@ mod tests {
             state: String::from(""),
             shop: String::from("big-shop.myshopify.com"),
         };
-        assert!(is_valid_shop_domain(params));
+        assert!(is_valid_shop_domain(&params));
     }
 
     #[test]
@@ -106,7 +158,7 @@ mod tests {
             state: String::from(""),
             shop: String::from("bass-ackwards.com"),
         };
-        assert!(!is_valid_shop_domain(params));
+        assert!(!is_valid_shop_domain(&params));
     }
 
     #[test]

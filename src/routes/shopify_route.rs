@@ -1,6 +1,6 @@
 use crate::{
-    config::Config, db_conn::DbConn, with_config, with_db_conn, with_reqwest_client,
-    ConfirmQueryParams, InstallQueryParams,
+    config::Config, db_conn::DbConn, handlers::shopify_handler, with_config, with_db_conn,
+    with_reqwest_client, ConfirmQueryParams, InstallQueryParams,
 };
 use reqwest::Client;
 use std::sync::Arc;
@@ -10,7 +10,7 @@ fn path_prefix_install() -> BoxedFilter<()> {
     warp::path("shopify_install").boxed()
 }
 
-fn path_prefix_confirm() -> BoxedFilter<()> {
+fn confirmation_path() -> BoxedFilter<()> {
     warp::path("shopify_confirm").boxed()
 }
 
@@ -32,8 +32,8 @@ pub fn shopify_confirm(
     client: Arc<Client>,
 ) -> BoxedFilter<(ConfirmQueryParams, Arc<Config>, Arc<DbConn>, Arc<Client>)> {
     warp::get()
-        .and(path_prefix_confirm())
-        .and(warp::query::query::<ConfirmQueryParams>())
+        .and(confirmation_path())
+        .and(warp::query::query::<ConfirmQueryParams>().and_then(shopify_handler::validate_domain))
         .and(with_config(config))
         .and(with_db_conn(db_conn))
         .and(with_reqwest_client(client))
