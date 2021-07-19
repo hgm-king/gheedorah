@@ -65,6 +65,7 @@ pub fn with_reqwest_client(client: Arc<Client>) -> warp::filters::BoxedFilter<(A
     warp::any().map(move || client.clone()).boxed()
 }
 
+#[cfg(feature = "mocks")]
 pub fn establish_test_connection() -> PgConnection {
     let database_url = db_test_url();
     PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))

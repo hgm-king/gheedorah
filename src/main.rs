@@ -1,7 +1,7 @@
 use env_logger::Env;
 use log::info;
 use sidecar::{
-    config::{generate_config, Config},
+    config::{generate_config},
     db_conn::DbConn,
     handlers::health_handler,
     routes::health_route,
@@ -17,8 +17,8 @@ async fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let config = Arc::new(generate_config());
-    let db_conn = Arc::new(DbConn::new(&config.db_path));
-    let client = Arc::new(reqwest::Client::new());
+    let _db_conn = Arc::new(DbConn::new(&config.db_path));
+    let _client = Arc::new(reqwest::Client::new());
 
     let health = health!();
     let end = health;

@@ -61,12 +61,22 @@ impl Config {
         }
     }
 
+    #[cfg(feature = "mocks")]
     pub fn set_shopify_api_uri(&mut self, uri: String) {
         self.shopify_api_uri = uri;
     }
 
+    #[cfg(feature = "mocks")]
     pub fn set_shopify_secret_key(&mut self, uri: String) {
         self.shopify_api_secret = uri;
+    }
+
+    pub fn get_shopify_api_uri(&self, shop: String) -> String {
+        if self.is_mocking {
+            self.shopify_api_uri.clone()
+        } else {
+            format!("{}{}", self.shopify_api_uri.clone(), shop)
+        }
     }
 }
 

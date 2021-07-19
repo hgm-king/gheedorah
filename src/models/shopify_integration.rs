@@ -131,7 +131,7 @@ mod tests {
 
         let new_shopify_integration = mock_struct();
 
-        let created_shopify_integration = diesel::insert_into(shopify_integrations::table)
+        diesel::insert_into(shopify_integrations::table)
             .values(&new_shopify_integration)
             .get_result::<ShopifyIntegration>(&conn)
             .expect("Error saving new shopify_integration");
@@ -210,7 +210,7 @@ mod tests {
         let shopify_integration = create(&conn, &mock_struct()).unwrap();
         let access_token = String::from("super ssssecret");
 
-        update_access_token(&conn, &shopify_integration, access_token.clone());
+        update_access_token(&conn, &shopify_integration, access_token.clone()).unwrap();
 
         let shopify_integrations = read_by_shop(&conn, shopify_integration.shop).unwrap();
 
