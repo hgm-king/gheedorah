@@ -68,8 +68,8 @@ pub async fn update_integration_with_access_token(
     params: &ConfirmQueryParams,
     config: Arc<Config>,
     conn: &PgConnection,
-    client: Arc<Client>,
     shop_integration: &shopify_integration::ShopifyIntegration,
+    client: Arc<Client>,
 ) -> Result<(), Box<dyn Error>> {
     let form_body = form_body_from_args(
         config.shopify_api_key.clone(),
@@ -261,8 +261,8 @@ mod tests {
             &params,
             Arc::new(config),
             &conn,
-            Arc::new(client),
             &shop_integration,
+            Arc::new(client),
         )
         .await;
         assert!(res.is_ok());
