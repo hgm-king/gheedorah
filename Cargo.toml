@@ -18,6 +18,7 @@ hex = "0.4.3"
 hmac = "0.11.0"
 lazy-regex = "2.2.1"
 log = "0.4.14"
+mockito = "0.30.0"
 mocktopus = "0.7.11"
 reqwest = { version = "0.11.3", features = ["json"]}
 reqwest_mock = "0.7.0"

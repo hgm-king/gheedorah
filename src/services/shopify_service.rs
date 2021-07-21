@@ -5,6 +5,7 @@ use crate::{
 use diesel::prelude::*;
 use hmac::{Hmac, Mac, NewMac};
 use lazy_regex::regex;
+use mockito::mock;
 use reqwest::Client;
 use sha2::Sha256;
 use std::error::Error;
@@ -205,6 +206,8 @@ mod tests {
         params.shop = shop.clone();
         params.state = nonce.clone();
 
+        let client = Arc::new(reqwest::Client::new());
+
         let conn = establish_test_connection();
 
         shopify_integration::NewShopifyIntegration::new(shop, nonce).insert(&conn);
@@ -212,6 +215,58 @@ mod tests {
         let opt = find_integration_request_from_params(&params, &conn);
 
         assert!(opt.is_some());
+
+        cleanup_table(&conn);
+    }
+
+    #[tokio::test]
+    async fn it_can_update_integrations_with_access_token() {
+        let shop = String::from("entrepa-ltd");
+        let nonce = String::from("west-philidelphia");
+        let access_token = String::from("let-me-in-pls");
+
+        let mut params = mock_params();
+        params.shop = shop.clone();
+        params.state = nonce.clone();
+
+        let mut config = generate_mocking_config();
+        config.set_shopify_api_uri(mockito::server_url());
+
+        let conn = establish_test_connection();
+        let shop_integration = shopify_integration::NewShopifyIntegration::new(shop.clone(), nonce).insert(&conn);
+
+        let client = reqwest::Client::new();
+        let _m = mock("POST", "/admin/oauth/access_token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(&format!(
+                "{{\"access_token\": \"{}\",\"scope\": \"write_orders,read_customers\"}}",
+                access_token
+            ))
+            .create();
+
+        let res = update_integration_with_access_token(&params, Arc::new(config), &conn, Arc::new(client), &shop_integration,).await;
+        assert!(res.is_ok());
+
+        let shopify_connections = shopify_integration::read_by_shop(&conn, shop.clone()).unwrap();
+
+        assert_eq!(1, shopify_connections.len());
+        let my_shopify_connection = shopify_connections.iter().find(|x| x.shop == shop);
+        assert!(
+            my_shopify_connection.is_some(),
+            "Could not find the created shopify_connection in the database!"
+        );
+
+        println!("{:?}", my_shopify_connection);
+
+        assert_eq!(
+            my_shopify_connection
+                .unwrap()
+                .access_token
+                .as_ref()
+                .unwrap(),
+            &access_token
+        );
 
         cleanup_table(&conn);
     }
