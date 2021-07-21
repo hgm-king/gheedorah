@@ -1,5 +1,5 @@
 use crate::HealthResponse;
-use warp::{Rejection, Reply, reply};
+use warp::{reply, Rejection, Reply};
 
 pub async fn health() -> Result<impl Reply, Rejection> {
     Ok(reply::json(&HealthResponse::new(String::from("OK"))))

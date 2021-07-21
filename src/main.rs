@@ -1,10 +1,7 @@
 use env_logger::Env;
 use log::info;
 use sidecar::{
-    config::{generate_config},
-    db_conn::DbConn,
-    handlers::health_handler,
-    routes::health_route,
+    config::generate_config, db_conn::DbConn, handlers::health_handler, routes::health_route,
 };
 use std::net::SocketAddr;
 use std::sync::Arc;

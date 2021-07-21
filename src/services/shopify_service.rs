@@ -1,16 +1,27 @@
 use crate::{
-    config::Config, db_conn::DbConn, models::shopify_integration, utils::gen_uuid,
-    AccessTokenResponse, ConfirmQueryParams, InstallQueryParams,
+    config::Config, models::shopify_integration, utils::gen_uuid, AccessTokenResponse,
+    ConfirmQueryParams, InstallQueryParams,
 };
 use diesel::prelude::*;
 use hmac::{Hmac, Mac, NewMac};
 use lazy_regex::regex;
-use mockito::mock;
 use reqwest::Client;
 use sha2::Sha256;
 use std::error::Error;
 use std::sync::Arc;
-use warp::http::Uri;
+
+pub fn create_integration_request(
+    params: &InstallQueryParams,
+    conn: &PgConnection,
+) -> Result<String, Box<dyn Error>> {
+    let nonce = gen_uuid();
+
+    // save install request in db to verify later
+    let shop_integration =
+        shopify_integration::NewShopifyIntegration::new(params.shop.clone(), nonce.clone());
+    shopify_integration::create(conn, &shop_integration)?;
+    Ok(nonce)
+}
 
 // need to confirm that the domain coming from params is from shopify
 pub fn is_valid_shop_domain(params: &ConfirmQueryParams) -> bool {
@@ -116,33 +127,6 @@ async fn fetch_access_token(
     Ok(access_token_json)
 }
 
-pub async fn shopify_install(
-    params: InstallQueryParams,
-    config: Arc<Config>,
-    db_conn: Arc<DbConn>,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    let nonce = gen_uuid();
-    let conn = &db_conn.get_conn();
-
-    // save install request in db to verify later
-    shopify_integration::NewShopifyIntegration::new(params.shop.clone(), nonce.clone())
-        .insert(conn);
-
-    // uri for the conform install page
-    let formatted_uri = format!(
-        "https://{}/admin/oauth/authorize?client_id={}&scope={}&redirect_uri={}&state={}",
-        params.shop,
-        config.shopify_api_key,
-        "read_orders,write_orders", // probably want to be config
-        "https://localhost:3030/shopify_confirm", // probably want to be config
-        nonce,
-    );
-
-    Ok(warp::redirect(
-        String::from(formatted_uri).parse::<Uri>().unwrap(),
-    ))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -163,6 +147,35 @@ mod tests {
             state: String::from("0.6784241404160823"),
             shop: String::from("some-shop.myshopify.com"),
         }
+    }
+
+    fn mock_install_params() -> InstallQueryParams {
+        InstallQueryParams {
+            hmac: String::from("lock-it-down"),
+            shop: String::from("plum-industrial"),
+            timestamp: String::from("1234"),
+        }
+    }
+
+    #[test]
+    fn it_creates_a_shopify_integration_request() {
+        let shop = String::from("plum-industrial");
+        let params = mock_install_params();
+        let conn = establish_test_connection();
+
+        let nonce = create_integration_request(&params, &conn).unwrap();
+
+        let shopify_connections =
+            shopify_integration::read_by_shop_and_nonce(&conn, shop.clone(), nonce).unwrap();
+
+        assert_eq!(1, shopify_connections.len());
+        let my_shopify_connection = shopify_connections.iter().find(|x| x.shop == shop);
+        assert!(
+            my_shopify_connection.is_some(),
+            "Could not find the created shopify_connection in the database!"
+        );
+
+        cleanup_table(&conn);
     }
 
     #[test]
@@ -206,8 +219,6 @@ mod tests {
         params.shop = shop.clone();
         params.state = nonce.clone();
 
-        let client = Arc::new(reqwest::Client::new());
-
         let conn = establish_test_connection();
 
         shopify_integration::NewShopifyIntegration::new(shop, nonce).insert(&conn);
@@ -233,10 +244,11 @@ mod tests {
         config.set_shopify_api_uri(mockito::server_url());
 
         let conn = establish_test_connection();
-        let shop_integration = shopify_integration::NewShopifyIntegration::new(shop.clone(), nonce).insert(&conn);
+        let shop_integration =
+            shopify_integration::NewShopifyIntegration::new(shop.clone(), nonce).insert(&conn);
 
         let client = reqwest::Client::new();
-        let _m = mock("POST", "/admin/oauth/access_token")
+        let _m = mockito::mock("POST", "/admin/oauth/access_token")
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(&format!(
@@ -245,7 +257,14 @@ mod tests {
             ))
             .create();
 
-        let res = update_integration_with_access_token(&params, Arc::new(config), &conn, Arc::new(client), &shop_integration,).await;
+        let res = update_integration_with_access_token(
+            &params,
+            Arc::new(config),
+            &conn,
+            Arc::new(client),
+            &shop_integration,
+        )
+        .await;
         assert!(res.is_ok());
 
         let shopify_connections = shopify_integration::read_by_shop(&conn, shop.clone()).unwrap();
@@ -256,8 +275,6 @@ mod tests {
             my_shopify_connection.is_some(),
             "Could not find the created shopify_connection in the database!"
         );
-
-        println!("{:?}", my_shopify_connection);
 
         assert_eq!(
             my_shopify_connection
