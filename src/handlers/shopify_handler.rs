@@ -1,11 +1,15 @@
 use crate::{
     config::Config, db_conn::DbConn, models::shopify_integration, services::shopify_service,
-    ConfirmQueryParams,
+    ConfirmQueryParams, InstallQueryParams,
 };
 use log::error;
 use reqwest::Client;
 use std::sync::Arc;
-use warp::{reject, Rejection};
+use warp::{http::Uri, reject, Rejection, Reply};
+
+#[derive(Debug)]
+pub struct CreateIntegrationError;
+impl reject::Reject for CreateIntegrationError {}
 
 #[derive(Debug)]
 pub struct InvalidDomainError;
@@ -23,10 +27,40 @@ impl reject::Reject for MissingIntegrationError {}
 pub struct AccessTokenError;
 impl reject::Reject for AccessTokenError {}
 
-// params: ConfirmQueryParams,
-// config: Arc<Config>,
-// db_conn: Arc<DbConn>,
-// client: Arc<Client>,
+pub async fn create_integration_request(
+    params: InstallQueryParams,
+    config: Arc<Config>,
+    db_conn: Arc<DbConn>,
+) -> Result<(InstallQueryParams, Arc<Config>, Arc<DbConn>, String), Rejection> {
+    match shopify_service::create_integration_request(&params, db_conn.clone()) {
+        Ok(nonce) => Ok((params, config, db_conn, nonce)),
+        Err(_) => {
+            error!("Could not generate install request for {:?}", params);
+            Err(reject::custom(CreateIntegrationError))
+        }
+    }
+}
+
+pub async fn handle_shopify_installation_request(
+    params: InstallQueryParams,
+    config: Arc<Config>,
+    _db_conn: Arc<DbConn>,
+    nonce: String,
+) -> Result<impl Reply, Rejection> {
+    // uri for the conform install page
+    let formatted_uri = format!(
+        "https://{}/admin/oauth/authorize?client_id={}&scope={}&redirect_uri={}&state={}",
+        params.shop,
+        config.shopify_api_key,
+        "read_orders,write_orders", // probably want to be config
+        "https://localhost:3030/shopify_confirm", // probably want to be config
+        nonce,
+    );
+
+    Ok(warp::redirect(
+        String::from(formatted_uri).parse::<Uri>().unwrap(),
+    ))
+}
 
 pub async fn validate_domain_parameter(
     params: ConfirmQueryParams,
@@ -65,7 +99,7 @@ pub async fn find_install_request(
     ),
     Rejection,
 > {
-    match shopify_service::find_integration_request_from_params(&params, &db_conn.get_conn()) {
+    match shopify_service::find_integration_request_from_params(&params, db_conn.clone()) {
         Some(shop_integration) => Ok((params, config, db_conn, shop_integration)),
         None => {
             error!("Missing install request for {:?}", params);
@@ -93,7 +127,7 @@ pub async fn update_with_access_token(
     match shopify_service::update_integration_with_access_token(
         &params,
         config.clone(),
-        &db_conn.get_conn(),
+        db_conn.clone(),
         &shop_integration,
         client.clone(),
     )
@@ -107,6 +141,12 @@ pub async fn update_with_access_token(
     }
 }
 
-// pub async fn health() -> Result<impl Reply, Rejection> {
-//     Ok(reply::json(&HealthResponse::new(String::from("OK"))))
-// }
+pub async fn handle_shopify_installation_confirmation(
+    _params: ConfirmQueryParams,
+    _config: Arc<Config>,
+    _db_conn: Arc<DbConn>,
+    _shop_integration: shopify_integration::ShopifyIntegration,
+    _client: Arc<Client>,
+) -> Result<impl Reply, Rejection> {
+    Ok(warp::redirect(String::from("/").parse::<Uri>().unwrap()))
+}

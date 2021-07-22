@@ -1,8 +1,7 @@
 use crate::{
-    config::Config, models::shopify_integration, utils::gen_uuid, AccessTokenResponse,
-    ConfirmQueryParams, InstallQueryParams,
+    config::Config, db_conn::DbConn, models::shopify_integration, utils::gen_uuid,
+    AccessTokenResponse, ConfirmQueryParams, InstallQueryParams,
 };
-use diesel::prelude::*;
 use hmac::{Hmac, Mac, NewMac};
 use lazy_regex::regex;
 use reqwest::Client;
@@ -12,14 +11,15 @@ use std::sync::Arc;
 
 pub fn create_integration_request(
     params: &InstallQueryParams,
-    conn: &PgConnection,
+    db_conn: Arc<DbConn>,
 ) -> Result<String, Box<dyn Error>> {
     let nonce = gen_uuid();
+    let conn = db_conn.get_conn();
 
     // save install request in db to verify later
     let shop_integration =
         shopify_integration::NewShopifyIntegration::new(params.shop.clone(), nonce.clone());
-    shopify_integration::create(conn, &shop_integration)?;
+    shopify_integration::create(&conn, &shop_integration)?;
     Ok(nonce)
 }
 
@@ -47,12 +47,13 @@ pub fn validate_hmac(
 
 pub fn find_integration_request_from_params(
     params: &ConfirmQueryParams,
-    conn: &PgConnection,
+    db_conn: Arc<DbConn>,
 ) -> Option<shopify_integration::ShopifyIntegration> {
     let shop = params.shop.clone();
     let state = params.state.clone();
+    let conn = db_conn.get_conn();
 
-    match shopify_integration::read_by_shop_and_nonce(conn, shop, state) {
+    match shopify_integration::read_by_shop_and_nonce(&conn, shop, state) {
         Err(_) => None,
         Ok(mut shoption) => {
             if 0 < shoption.len() {
@@ -67,10 +68,12 @@ pub fn find_integration_request_from_params(
 pub async fn update_integration_with_access_token(
     params: &ConfirmQueryParams,
     config: Arc<Config>,
-    conn: &PgConnection,
+    db_conn: Arc<DbConn>,
     shop_integration: &shopify_integration::ShopifyIntegration,
     client: Arc<Client>,
 ) -> Result<(), Box<dyn Error>> {
+    let conn = db_conn.get_conn();
+
     let form_body = form_body_from_args(
         config.shopify_api_key.clone(),
         config.shopify_api_secret.clone(),
@@ -130,7 +133,8 @@ async fn fetch_access_token(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{config::generate_mocking_config, establish_test_connection, schema};
+    use crate::{config::generate_mocking_config, db_test_url, schema};
+    use diesel::prelude::*;
 
     fn cleanup_table(conn: &PgConnection) {
         diesel::delete(schema::shopify_integrations::table)
@@ -161,12 +165,13 @@ mod tests {
     fn it_creates_a_shopify_integration_request() {
         let shop = String::from("plum-industrial");
         let params = mock_install_params();
-        let conn = establish_test_connection();
+        let db_conn = Arc::new(DbConn::new(&db_test_url()));
 
-        let nonce = create_integration_request(&params, &conn).unwrap();
+        let nonce = create_integration_request(&params, db_conn.clone()).unwrap();
 
         let shopify_connections =
-            shopify_integration::read_by_shop_and_nonce(&conn, shop.clone(), nonce).unwrap();
+            shopify_integration::read_by_shop_and_nonce(&db_conn.get_conn(), shop.clone(), nonce)
+                .unwrap();
 
         assert_eq!(1, shopify_connections.len());
         let my_shopify_connection = shopify_connections.iter().find(|x| x.shop == shop);
@@ -175,7 +180,7 @@ mod tests {
             "Could not find the created shopify_connection in the database!"
         );
 
-        cleanup_table(&conn);
+        cleanup_table(&db_conn.get_conn());
     }
 
     #[test]
@@ -215,19 +220,19 @@ mod tests {
         let shop = String::from("acme-corporation");
         let nonce = String::from("fair-verona");
 
+        let db_conn = Arc::new(DbConn::new(&db_test_url()));
+
         let mut params = mock_params();
         params.shop = shop.clone();
         params.state = nonce.clone();
 
-        let conn = establish_test_connection();
+        shopify_integration::NewShopifyIntegration::new(shop, nonce).insert(&db_conn.get_conn());
 
-        shopify_integration::NewShopifyIntegration::new(shop, nonce).insert(&conn);
-
-        let opt = find_integration_request_from_params(&params, &conn);
+        let opt = find_integration_request_from_params(&params, db_conn.clone());
 
         assert!(opt.is_some());
 
-        cleanup_table(&conn);
+        cleanup_table(&db_conn.get_conn());
     }
 
     #[tokio::test]
@@ -236,6 +241,8 @@ mod tests {
         let nonce = String::from("west-philidelphia");
         let access_token = String::from("let-me-in-pls");
 
+        let db_conn = Arc::new(DbConn::new(&db_test_url()));
+
         let mut params = mock_params();
         params.shop = shop.clone();
         params.state = nonce.clone();
@@ -243,9 +250,8 @@ mod tests {
         let mut config = generate_mocking_config();
         config.set_shopify_api_uri(mockito::server_url());
 
-        let conn = establish_test_connection();
-        let shop_integration =
-            shopify_integration::NewShopifyIntegration::new(shop.clone(), nonce).insert(&conn);
+        let shop_integration = shopify_integration::NewShopifyIntegration::new(shop.clone(), nonce)
+            .insert(&db_conn.get_conn());
 
         let client = reqwest::Client::new();
         let _m = mockito::mock("POST", "/admin/oauth/access_token")
@@ -260,14 +266,15 @@ mod tests {
         let res = update_integration_with_access_token(
             &params,
             Arc::new(config),
-            &conn,
+            db_conn.clone(),
             &shop_integration,
             Arc::new(client),
         )
         .await;
         assert!(res.is_ok());
 
-        let shopify_connections = shopify_integration::read_by_shop(&conn, shop.clone()).unwrap();
+        let shopify_connections =
+            shopify_integration::read_by_shop(&db_conn.get_conn(), shop.clone()).unwrap();
 
         assert_eq!(1, shopify_connections.len());
         let my_shopify_connection = shopify_connections.iter().find(|x| x.shop == shop);
@@ -285,6 +292,6 @@ mod tests {
             &access_token
         );
 
-        cleanup_table(&conn);
+        cleanup_table(&db_conn.get_conn());
     }
 }

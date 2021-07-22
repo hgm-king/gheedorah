@@ -7,22 +7,24 @@ use std::sync::Arc;
 use warp::{filters::BoxedFilter, Filter};
 
 fn path_prefix_install() -> BoxedFilter<()> {
-    warp::path("shopify_install").boxed()
+    warp::path!("shopify" / "install").boxed()
 }
 
 fn confirmation_path() -> BoxedFilter<()> {
-    warp::path("shopify_confirm").boxed()
+    warp::path!("shopify" / "confirm").boxed()
 }
 
 pub fn shopify_install(
     config: Arc<Config>,
     db_conn: Arc<DbConn>,
-) -> BoxedFilter<(InstallQueryParams, Arc<Config>, Arc<DbConn>)> {
+) -> BoxedFilter<(InstallQueryParams, Arc<Config>, Arc<DbConn>, String)> {
     warp::get()
         .and(path_prefix_install())
         .and(warp::query::query::<InstallQueryParams>())
         .and(with_config(config))
         .and(with_db_conn(db_conn))
+        .and_then(shopify_handler::create_integration_request)
+        .untuple_one()
         .boxed()
 }
 
@@ -48,5 +50,7 @@ pub fn shopify_confirm(
         .and_then(shopify_handler::find_install_request)
         .untuple_one()
         .and(with_reqwest_client(client))
+        .and_then(shopify_handler::update_with_access_token)
+        .untuple_one()
         .boxed()
 }
