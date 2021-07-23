@@ -1,7 +1,10 @@
 use env_logger::Env;
 use log::info;
 use sidecar::{
-    config::generate_config, db_conn::DbConn, handlers::health_handler, routes::health_route,
+    config::generate_config,
+    db_conn::DbConn,
+    handlers::{health_handler, shopify_handler},
+    routes::{health_route, shopify_route},
 };
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -12,13 +15,15 @@ pub mod api;
 #[tokio::main]
 async fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+    info!("Starting Sidecar 🥃");
 
     let config = Arc::new(generate_config());
-    let _db_conn = Arc::new(DbConn::new(&config.db_path));
-    let _client = Arc::new(reqwest::Client::new());
+    let db_conn = Arc::new(DbConn::new(&config.db_path));
+    let client = Arc::new(reqwest::Client::new());
 
-    let health = health!();
-    let end = health;
+    let shopify =
+        shopify!(config.clone(), db_conn.clone(), client.clone()).with(warp::log("shopify"));
+    let end = health!().or(shopify);
 
     let socket_address = config
         .clone()

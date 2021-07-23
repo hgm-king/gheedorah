@@ -11,6 +11,7 @@ pub mod utils;
 extern crate diesel;
 
 use crate::{config::Config, db_conn::DbConn};
+#[cfg(feature = "mocks")]
 use diesel::prelude::*;
 use dotenv::dotenv;
 use reqwest::Client;
@@ -28,6 +29,13 @@ impl HealthResponse {
     pub fn new(status: String) -> Self {
         HealthResponse { status }
     }
+}
+
+/// An API error serializable to JSON.
+#[derive(Serialize)]
+struct ErrorMessage {
+    code: u16,
+    message: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

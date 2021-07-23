@@ -1,11 +1,16 @@
 use crate::{
     config::Config, db_conn::DbConn, models::shopify_integration, services::shopify_service,
-    ConfirmQueryParams, InstallQueryParams,
+    ConfirmQueryParams, ErrorMessage, InstallQueryParams,
 };
 use log::error;
 use reqwest::Client;
+use std::convert::Infallible;
+use std::error::Error;
 use std::sync::Arc;
-use warp::{http::Uri, reject, Rejection, Reply};
+use warp::{
+    http::{StatusCode, Uri},
+    reject, Rejection, Reply,
+};
 
 #[derive(Debug)]
 pub struct CreateIntegrationError;
@@ -149,4 +154,46 @@ pub async fn handle_shopify_installation_confirmation(
     _client: Arc<Client>,
 ) -> Result<impl Reply, Rejection> {
     Ok(warp::redirect(String::from("/").parse::<Uri>().unwrap()))
+}
+
+// This function receives a `Rejection` and tries to return a custom
+// value, otherwise simply passes the rejection along.
+pub async fn shopify_handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
+    let code;
+    let message;
+
+    if err.is_not_found() {
+        code = StatusCode::NOT_FOUND;
+        message = "NOT_FOUND";
+    } else if let Some(e) = err.find::<warp::filters::body::BodyDeserializeError>() {
+        // This error happens if the body could not be deserialized correctly
+        // We can use the cause to analyze the error and customize the error message
+        message = match e.source() {
+            Some(_cause) => "BAD_REQUEST",
+            None => "BAD_REQUEST",
+        };
+        code = StatusCode::BAD_REQUEST;
+    } else if let Some(_) = err.find::<warp::reject::MethodNotAllowed>() {
+        // We can handle a specific error, here METHOD_NOT_ALLOWED,
+        // and render it however we want
+        code = StatusCode::METHOD_NOT_ALLOWED;
+        message = "METHOD_NOT_ALLOWED";
+    } else if let Some(_) = err.find::<InvalidDomainError>() {
+        // We can handle a specific error, here METHOD_NOT_ALLOWED,
+        // and render it however we want
+        code = StatusCode::BAD_REQUEST;
+        message = "INVALID_DOMAIN";
+    } else {
+        // We should have expected this... Just log and say its a 500
+        error!("unhandled rejection: {:?}", err);
+        code = StatusCode::INTERNAL_SERVER_ERROR;
+        message = "UNHANDLED_REJECTION";
+    }
+
+    let json = warp::reply::json(&ErrorMessage {
+        code: code.as_u16(),
+        message: message.into(),
+    });
+
+    Ok(warp::reply::with_status(json, code))
 }
