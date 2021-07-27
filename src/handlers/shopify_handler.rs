@@ -2,7 +2,7 @@ use crate::{
     config::Config, db_conn::DbConn, models::shopify_integration, services::shopify_service,
     ConfirmQueryParams, ErrorMessage, InstallQueryParams,
 };
-use log::error;
+use log::{error, info};
 use reqwest::Client;
 use std::convert::Infallible;
 use std::error::Error;
@@ -58,10 +58,10 @@ pub async fn handle_shopify_installation_request(
         params.shop,
         config.shopify_api_key,
         "read_orders,write_orders", // probably want to be config
-        "https://localhost:3030/shopify_confirm", // probably want to be config
+        "https://localhost:3030/shopify/confirm", // probably want to be config
         nonce,
     );
-
+    info!("Redirecting shop {} to uri {}", params.shop, formatted_uri);
     Ok(warp::redirect(
         String::from(formatted_uri).parse::<Uri>().unwrap(),
     ))
@@ -147,12 +147,13 @@ pub async fn update_with_access_token(
 }
 
 pub async fn handle_shopify_installation_confirmation(
-    _params: ConfirmQueryParams,
+    params: ConfirmQueryParams,
     _config: Arc<Config>,
     _db_conn: Arc<DbConn>,
     _shop_integration: shopify_integration::ShopifyIntegration,
     _client: Arc<Client>,
 ) -> Result<impl Reply, Rejection> {
+    info!("Redirecting shop {} to uri /", params.shop);
     Ok(warp::redirect(String::from("/").parse::<Uri>().unwrap()))
 }
 

@@ -73,8 +73,8 @@ mod shopify_integration_tests {
 
     #[tokio::test]
     async fn it_follows_shopify_confirm_flow() {
-        let shop_name = "some-shop.myshopify.com";
-        let nonce = "0.6784241404160823";
+        let shop_name = "shop.myshopify.com";
+        let nonce = "89793";
         let access_token = "f85632530bf277ec9ac6f649fc327f17";
 
         // setup context
@@ -108,9 +108,9 @@ mod shopify_integration_tests {
             .method("GET")
             .path(&format!(
                 "/shopify/confirm\
-                    ?code=0907a61c0c8d55e99db179b68161bc00\
-                    &hmac=700e2dadb827fcc8609e9d5ce208b2e9cdaab9df07390d2cbca10d7c328fc4bf\
-                    &host=YmRyb2NrZXRzdG9yZS5teXNob3BpZnkuY29tL2FkbWlu\
+                    ?code=314159\
+                    &hmac=00d39b4e40556ad1f8c8a5c673975e62abc8e0f2574d99a1934e2e881350a710\
+                    &host=26535\
                     &shop={}\
                     &state={}\
                     &timestamp=1337178173",
@@ -145,9 +145,9 @@ mod shopify_integration_tests {
 
     #[tokio::test]
     async fn it_runs_the_entire_flow() {
-        let shop_name = "some-shop.myshopify.com";
-        let nonce = "0.6784241404160823";
-        let hmac = "700e2dadb827fcc8609e9d5ce208b2e9cdaab9df07390d2cbca10d7c328fc4bf";
+        let shop_name = "shop.myshopify.com";
+        let nonce = "89793";
+        let hmac = "00d39b4e40556ad1f8c8a5c673975e62abc8e0f2574d99a1934e2e881350a710";
         let access_token = "f85632530bf277ec9ac6f649fc327f17";
 
         // setup context
@@ -195,9 +195,9 @@ mod shopify_integration_tests {
             .method("GET")
             .path(&format!(
                 "/shopify/confirm\
-                    ?code=0907a61c0c8d55e99db179b68161bc00\
+                    ?code=314159\
                     &hmac={}\
-                    &host=YmRyb2NrZXRzdG9yZS5teXNob3BpZnkuY29tL2FkbWlu\
+                    &host=26535\
                     &shop={}\
                     &state={}\
                     &timestamp=1337178173",
@@ -215,9 +215,9 @@ mod shopify_integration_tests {
 
     #[tokio::test]
     async fn it_handles_a_double_install_scenario() {
-        let shop_name = "some-shop.myshopify.com";
-        let nonce = "0.6784241404160823";
-        let hmac = "700e2dadb827fcc8609e9d5ce208b2e9cdaab9df07390d2cbca10d7c328fc4bf";
+        let shop_name = "shop.myshopify.com";
+        let nonce = "89793";
+        let hmac = "00d39b4e40556ad1f8c8a5c673975e62abc8e0f2574d99a1934e2e881350a710";
         let access_token = "f85632530bf277ec9ac6f649fc327f17";
 
         // setup context
@@ -241,10 +241,7 @@ mod shopify_integration_tests {
         let _res = warp::test::request()
             .method("GET")
             .path(&format!(
-                "/shopify/install\
-                ?hmac={}\
-                &shop={}\
-                &timestamp=1623154978",
+                "/shopify/install?hmac={}&shop={}&timestamp=1337178173",
                 hmac, shop_name
             ))
             .reply(&shopify)
@@ -265,10 +262,7 @@ mod shopify_integration_tests {
         let _res = warp::test::request()
             .method("GET")
             .path(&format!(
-                "/shopify/install\
-                ?hmac={}\
-                &shop={}\
-                &timestamp=1623154978",
+                "/shopify/install?hmac={}&shop={}&timestamp=1337178173",
                 hmac, shop_name
             ))
             .reply(&shopify)
@@ -279,9 +273,9 @@ mod shopify_integration_tests {
             .method("GET")
             .path(&format!(
                 "/shopify/confirm\
-                    ?code=0907a61c0c8d55e99db179b68161bc00\
+                    ?code=314159\
                     &hmac={}\
-                    &host=YmRyb2NrZXRzdG9yZS5teXNob3BpZnkuY29tL2FkbWlu\
+                    &host=26535\
                     &shop={}\
                     &state={}\
                     &timestamp=1337178173",

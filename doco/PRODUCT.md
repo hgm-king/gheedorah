@@ -6,11 +6,11 @@ For a minimum viable product, our aim is to integrate only with *Shopify*. In or
 
 When a shop keeper is looking to use our service, we will need to follow the **authentication flow** outlined in the [Shopify documentation](https://shopify.dev/apps/auth/oauth). We will need to decide what sort of *scopes/permissions* we will need to request from the shop.
 
-After we are authenticated, our service will receive an *access token* from Shopify that needs to be saved. It will be valid as long as the shop has our service installed. When it comes time to do any sort of operations with the shop's API, we will need to request a [session token](https://shopify.dev/apps/auth/session-tokens). This flow will repeat whenever the token becomes invalid.
+After we are authenticated, our service will receive an *access token* from Shopify that needs to be saved. It will be valid as long as the shop has our service installed. When it comes time to do any sort of operations with the shop's API, we will use this token in the form of a header.
 
-It is important to keep in mind while developing that we will compose reusable services to follow the flow for each of these. This will save us time to adopt other e-commerce platforms.
+Once we have access, we can then get our hands on everything within the requested scopes for the shop's [Admin API](https://shopify.dev/api/admin). Personally, a
 
-Throughout these two main flows, we will need to handle various scenarios in which something may go wrong. Here is a working list of things that could go wrong:
+Throughout this main flow, we will need to handle various scenarios in which something may go wrong. Here is a working list of things that could go wrong:
 - The shop uninstalls the application (we would not be able to get a working session token)
 - The shop does not complete the authentication process (database entries will be left incomplete)
 

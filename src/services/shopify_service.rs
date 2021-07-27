@@ -97,8 +97,9 @@ pub async fn update_integration_with_access_token(
 // "code=0907a61c0c8d55e99db179b68161bc00&shop=some-shop.myshopify.com&state=0.6784241404160823&timestamp=1337178173"
 fn convert_query_params_to_hmac_code(params: &ConfirmQueryParams) -> String {
     format!(
-        "code={}&shop={}&state={}&timestamp={}",
+        "code={}&host={}&shop={}&state={}&timestamp={}",
         params.code.clone(),
+        params.host.clone(),
         params.shop.clone(),
         params.state.clone(),
         params.timestamp.clone()
@@ -144,12 +145,12 @@ mod tests {
 
     fn mock_params() -> ConfirmQueryParams {
         ConfirmQueryParams {
-            code: String::from("0907a61c0c8d55e99db179b68161bc00"),
-            hmac: String::from("700e2dadb827fcc8609e9d5ce208b2e9cdaab9df07390d2cbca10d7c328fc4bf"),
-            host: String::from("YmRyb2NrZXRzdG9yZS5teXNob3BpZnkuY29tL2FkbWlu"),
+            code: String::from("314159"),
+            hmac: String::from("00d39b4e40556ad1f8c8a5c673975e62abc8e0f2574d99a1934e2e881350a710"),
+            host: String::from("26535"),
             timestamp: String::from("1337178173"),
-            state: String::from("0.6784241404160823"),
-            shop: String::from("some-shop.myshopify.com"),
+            state: String::from("89793"),
+            shop: String::from("shop.myshopify.com"),
         }
     }
 
