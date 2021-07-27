@@ -17,10 +17,12 @@ async fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     info!("Starting Sidecar 🥃");
 
+    // set up global dependencies, using arc to have shared references across requests
     let config = Arc::new(generate_config());
     let db_conn = Arc::new(DbConn::new(&config.db_path));
     let client = Arc::new(reqwest::Client::new());
 
+    // compose our routes and handlers
     let shopify =
         shopify!(config.clone(), db_conn.clone(), client.clone()).with(warp::log("shopify"));
     let end = health!().or(shopify);
