@@ -1,4 +1,5 @@
 use dotenv::dotenv;
+use log::info;
 use std::env;
 
 #[derive(Clone)]
@@ -7,6 +8,9 @@ pub struct Config {
     pub shopify_api_key: String,
     pub shopify_api_secret: String,
     pub shopify_api_uri: String,
+    pub smtp_host: String,
+    pub smtp_user: String,
+    pub smtp_pass: String,
     pub tls: bool,
     pub cert_path: Option<String>,
     pub key_path: Option<String>,
@@ -16,6 +20,7 @@ pub struct Config {
 
 impl Config {
     pub fn new(is_mocking: bool) -> Self {
+        info!("🤖 Configuring the application!");
         dotenv().ok();
 
         // app fields
@@ -24,12 +29,15 @@ impl Config {
         let app_addr = format!("{}:{}", app_host, app_port);
 
         // shopify api creds
+        let shopify_api_uri = String::from("https://");
         let shopify_api_key = env::var("API_KEY_SHOPIFY").expect("API_KEY_SHOPIFY must be set");
         let shopify_api_secret =
             env::var("API_SECRET_SHOPIFY").expect("API_SECRET_SHOPIFY must be set");
 
-        // see get_shopify_api_uri
-        let shopify_api_uri = String::from("https://");
+        // mailer variables
+        let smtp_host = env::var("SMTP_HOST").expect("SMTP_HOST must be set");
+        let smtp_user = env::var("SMTP_USER").expect("SMTP_USER must be set");
+        let smtp_pass = env::var("SMTP_PASS").expect("SMTP_PASS must be set");
 
         // prepare tls if necessary
         let tls = env::var("ENABLE_TLS")
@@ -56,6 +64,9 @@ impl Config {
             shopify_api_key,
             shopify_api_secret,
             shopify_api_uri,
+            smtp_host,
+            smtp_user,
+            smtp_pass,
             tls,
             cert_path,
             key_path,

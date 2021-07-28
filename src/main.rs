@@ -5,6 +5,7 @@ use sidecar::{
     db_conn::DbConn,
     handlers::{health_handler, shopify_handler},
     routes::{health_route, shopify_route},
+    services::email_service,
 };
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -15,12 +16,13 @@ pub mod api;
 #[tokio::main]
 async fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-    info!("Starting Sidecar 🥃");
+    info!("Booting Sidecar 🥃");
 
     // set up global dependencies, using arc to have shared references across requests
     let config = Arc::new(generate_config());
     let db_conn = Arc::new(DbConn::new(&config.db_path));
     let client = Arc::new(reqwest::Client::new());
+    let _mailer = Arc::new(email_service::mock_email_client(config.clone()));
 
     // compose our routes and handlers
     let shopify =
@@ -36,7 +38,7 @@ async fn main() {
     info!("Listening at {}", &config.app_addr);
 
     if config.clone().tls {
-        info!("TLS Enabled!");
+        info!("🔐 TLS Enabled!");
 
         warp::serve(end)
             .tls()
