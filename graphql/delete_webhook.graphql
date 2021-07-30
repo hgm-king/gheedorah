@@ -1,0 +1,5 @@
+mutation {
+  webhookSubscriptionDelete(id: "gid://shopify/WebhookSubscription/1049978765501") {
+    deletedWebhookSubscriptionId
+  }
+}
