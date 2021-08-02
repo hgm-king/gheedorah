@@ -1,0 +1,41 @@
+mutation CreateGiftCardProduct {
+  productCreate(input: {
+    title: "Sidecar Gift Card",
+    descriptionHtml: "Purchasing this product awards a specified amount of store credit for the client. This credit can be redeemed only within this store, and cannot be transferred to another site. The giftcard will be represented by a code, sent to the client's provided email. This code needs to be protected, though could be shared if preferred.",
+    handle: "sidecar-gift-card",
+    tags: ["Sidecar Gift Card"],
+    published: true,
+    vendor: "Sidecar",
+    variants: [
+      {
+        title: "$100",
+        price: 100.00,
+        requiresShipping: false,
+        taxable: false,
+        options: [
+          "100 bucks"
+        ]
+      },
+      {
+        title: "$1000",
+        price: 100.00,
+        requiresShipping: false,
+        taxable: false,
+        options: [
+          "1000 bucks"
+        ]
+      },
+    ],
+    options: [
+      "Card Title",
+    ]
+  })
+  {
+    product {
+      id
+    },
+    userErrors {
+      message
+    }
+  }
+}

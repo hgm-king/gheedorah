@@ -1,0 +1,42 @@
+query GetProducts {
+  products(first: 10) {
+    edges {
+      node {
+        variants(first: 10) {
+          edges {
+            node {
+              title,
+              price
+            }
+          }
+        },
+        totalInventory,
+        collections(first:10) {
+          edges {
+            node {
+              title
+            }
+          }
+        },
+        options(first: 10) {
+          name,
+          values
+        }
+        createdAt,
+        description,
+        handle,
+        id,
+        metafields(first: 10) {
+          edges {
+            node {
+              type,
+              description,
+              id
+            }
+          }
+        },
+        productType
+      }
+    }
+  }
+}
