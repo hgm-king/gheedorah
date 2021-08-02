@@ -30,7 +30,7 @@ async fn main() {
     let shopify_order = shopify_order!();
 
     // removing the shopify integration endpoint for now
-    let end = health!().or(shopify_order);
+    let end = health!().or(shopify_order.or(shopify));
 
     let socket_address = config
         .clone()
