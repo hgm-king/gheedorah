@@ -57,8 +57,8 @@ pub async fn handle_shopify_installation_request(
         "https://{}/admin/oauth/authorize?client_id={}&scope={}&redirect_uri={}&state={}",
         params.shop,
         config.shopify_api_key,
-        "read_orders,write_orders", // probably want to be config
-        "https://localhost:3030/shopify/confirm", // probably want to be config
+        config.shopify_access_scopes,
+        config.shopify_installation_confirmation_uri, // probably want to be config
         nonce,
     );
     info!("Redirecting shop {} to uri {}", params.shop, formatted_uri);
@@ -153,7 +153,7 @@ pub async fn handle_shopify_installation_confirmation(
     _shop_integration: shopify_integration::ShopifyIntegration,
     _client: Arc<Client>,
 ) -> Result<impl Reply, Rejection> {
-    info!("Redirecting shop {} to uri /", params.shop);
+    info!("Successfully installed by shop {}; redirecting to uri /", params.shop);
     Ok(warp::redirect(String::from("/").parse::<Uri>().unwrap()))
 }
 

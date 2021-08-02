@@ -8,6 +8,8 @@ pub struct Config {
     pub shopify_api_key: String,
     pub shopify_api_secret: String,
     pub shopify_api_uri: String,
+    pub shopify_access_scopes: String,
+    pub shopify_installation_confirmation_uri: String,
     pub smtp_host: String,
     pub smtp_user: String,
     pub smtp_pass: String,
@@ -34,6 +36,11 @@ impl Config {
         let shopify_api_secret =
             env::var("API_SECRET_SHOPIFY").expect("API_SECRET_SHOPIFY must be set");
 
+        // our access scopes allow us to do these things
+        let shopify_access_scopes = String::from("read_products,write_products,read_orders,write_orders");
+        // the path to send the user when they confirm the installation of our app
+        let shopify_installation_confirmation_uri = String::from("https://localhost:3030/shopify/confirm");
+
         // mailer variables
         let smtp_host = env::var("SMTP_HOST").expect("SMTP_HOST must be set");
         let smtp_user = env::var("SMTP_USER").expect("SMTP_USER must be set");
@@ -45,17 +52,17 @@ impl Config {
             .parse()
             .expect("ENABLE_TLS must be true or false");
 
-        let cert_path = if tls {
-            Some(env::var("CERT_PATH").expect("CERT_PATH must be set"))
-        } else {
-            None
-        };
 
-        let key_path = if tls {
-            Some(env::var("KEY_PATH").expect("KEY_PATH must be set"))
-        } else {
-            None
-        };
+        let cert_path;
+        let key_path;
+        if tls {
+            cert_path = Some(env::var("CERT_PATH").expect("CERT_PATH must be set"));
+            key_path = Some(env::var("KEY_PATH").expect("KEY_PATH must be set"));
+        }
+        else {
+            cert_path = None;
+            key_path = None;
+        }
 
         let db_path = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
@@ -64,6 +71,8 @@ impl Config {
             shopify_api_key,
             shopify_api_secret,
             shopify_api_uri,
+            shopify_access_scopes,
+            shopify_installation_confirmation_uri,
             smtp_host,
             smtp_user,
             smtp_pass,
