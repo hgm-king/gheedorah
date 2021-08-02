@@ -37,9 +37,11 @@ impl Config {
             env::var("API_SECRET_SHOPIFY").expect("API_SECRET_SHOPIFY must be set");
 
         // our access scopes allow us to do these things
-        let shopify_access_scopes = String::from("read_products,write_products,read_orders,write_orders");
+        let shopify_access_scopes =
+            String::from("read_products,write_products,read_orders,write_orders");
         // the path to send the user when they confirm the installation of our app
-        let shopify_installation_confirmation_uri = String::from("https://localhost:3030/shopify/confirm");
+        let shopify_installation_confirmation_uri =
+            String::from("https://localhost:3030/shopify/confirm");
 
         // mailer variables
         let smtp_host = env::var("SMTP_HOST").expect("SMTP_HOST must be set");
@@ -52,14 +54,12 @@ impl Config {
             .parse()
             .expect("ENABLE_TLS must be true or false");
 
-
         let cert_path;
         let key_path;
         if tls {
             cert_path = Some(env::var("CERT_PATH").expect("CERT_PATH must be set"));
             key_path = Some(env::var("KEY_PATH").expect("KEY_PATH must be set"));
-        }
-        else {
+        } else {
             cert_path = None;
             key_path = None;
         }

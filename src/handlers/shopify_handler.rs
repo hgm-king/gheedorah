@@ -153,7 +153,10 @@ pub async fn handle_shopify_installation_confirmation(
     _shop_integration: shopify_integration::ShopifyIntegration,
     _client: Arc<Client>,
 ) -> Result<impl Reply, Rejection> {
-    info!("Successfully installed by shop {}; redirecting to uri /", params.shop);
+    info!(
+        "Successfully installed by shop {}; redirecting to uri /",
+        params.shop
+    );
     Ok(warp::redirect(String::from("/").parse::<Uri>().unwrap()))
 }
 

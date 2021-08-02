@@ -4,7 +4,7 @@ use sidecar::{
     config::generate_config,
     db_conn::DbConn,
     handlers::{health_handler, shopify_handler, shopify_order_handler},
-    routes::{health_route, shopify_route, shopify_order_route},
+    routes::{health_route, shopify_order_route, shopify_route},
     services::email_service,
 };
 use std::net::SocketAddr;
