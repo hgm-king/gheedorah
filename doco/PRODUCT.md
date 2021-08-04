@@ -57,6 +57,8 @@ Here are the following functions that we require (note they are already in Solid
 ##### Is Ethereum the best platform to build upon?
 Smart contracts are exactly what we need. Being able to codify the logic into an immutable, distributed *contract* is perfect. An issue, though, is that Ethereum is hot at the moment and will be expensive. Each `write` transaction to the blockchain will incur a fee, and the pricing may be an issue; it is [low at the moment](https://www.theblockcrypto.com/post/108471/ethereum-eth-gas-fees-six-month-low-why) but has been upwards of 45$.
 
+Lately, [Ethereum 2.0](https://ethereum.org/en/eth2/) has been in the works and is getting released throughout 2021-2022. Something to investigate here.
+
 ##### Do we need to look into more methods in our contract?
 We will be checking to see if a user is able to use credit on a purchase. It would make sense to be able to make one call that would see if a transaction would be valid. This would be followed by another subsequent call which would do the actual transaction. Seeing as we can do an initial check to see if they have a credit entity, we can get away with just the debit and credit functions, due to the following logic:
 

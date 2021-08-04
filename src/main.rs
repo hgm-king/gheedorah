@@ -3,8 +3,8 @@ use log::info;
 use sidecar::{
     config::generate_config,
     db_conn::DbConn,
-    handlers::{health_handler, shopify_handler, shopify_order_handler},
-    routes::{health_route, shopify_order_route, shopify_route},
+    handlers::{health_handler, shopify_handler, shopify_order_handler, shopify_product_handler},
+    routes::{health_route, shopify_order_route, shopify_product_route, shopify_route},
     services::email_service,
 };
 use std::net::SocketAddr;
@@ -28,9 +28,9 @@ async fn main() {
     let shopify =
         shopify!(config.clone(), db_conn.clone(), client.clone()).with(warp::log("shopify"));
     let shopify_order = shopify_order!();
-
+    let shopify_product = shopify_product!();
     // removing the shopify integration endpoint for now
-    let end = health!().or(shopify_order.or(shopify));
+    let end = health!().or(shopify_order).or(shopify_product).or(shopify);
 
     let socket_address = config
         .clone()
