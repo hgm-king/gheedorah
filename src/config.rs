@@ -7,7 +7,9 @@ pub struct Config {
     pub app_addr: String,
     pub shopify_api_key: String,
     pub shopify_api_secret: String,
-    pub shopify_api_uri: String,
+    pub shopify_api_domain: Option<String>,
+    pub shopify_api_path: String,
+    pub shopify_graphql_domain: Option<String>,
     pub shopify_graphql_path: String,
     pub shopify_access_scopes: String,
     pub shopify_installation_confirmation_uri: String,
@@ -32,7 +34,6 @@ impl Config {
         let app_addr = format!("{}:{}", app_host, app_port);
 
         // shopify api creds
-        let shopify_api_uri = String::from("https://");
         let shopify_api_key = env::var("API_KEY_SHOPIFY").expect("API_KEY_SHOPIFY must be set");
         let shopify_api_secret =
             env::var("API_SECRET_SHOPIFY").expect("API_SECRET_SHOPIFY must be set");
@@ -44,6 +45,11 @@ impl Config {
         let shopify_installation_confirmation_uri =
             String::from("https://localhost:3030/shopify/confirm");
 
+        // domains and paths to any external Shopify services that we will use.
+        // these two need to be none, they will be set by a mockito url if we are mocking for tests
+        let shopify_api_domain = None;
+        let shopify_graphql_domain = None;
+        let shopify_api_path = String::from("/admin/oauth/access_token");
         let shopify_graphql_path = String::from("/admin/api/2021-07/graphql.json");
 
         // mailer variables
@@ -73,7 +79,9 @@ impl Config {
             app_addr,
             shopify_api_key,
             shopify_api_secret,
-            shopify_api_uri,
+            shopify_api_domain,
+            shopify_api_path,
+            shopify_graphql_domain,
             shopify_graphql_path,
             shopify_access_scopes,
             shopify_installation_confirmation_uri,
@@ -88,37 +96,37 @@ impl Config {
         }
     }
 
-    // used for mocks; overrides the shopify api uri with a uri that mockito is listening on
-    #[cfg(feature = "mocks")]
-    pub fn set_shopify_api_uri(&mut self, uri: String) {
-        self.shopify_api_uri = uri;
-    }
-
     // used for mocks; during shopify hmac validation testing, we need to hardcode a
     // result that depends on this value
     #[cfg(feature = "mocks")]
-    pub fn set_shopify_secret_key(&mut self, uri: String) {
-        self.shopify_api_secret = uri;
+    pub fn set_shopify_secret_key(&mut self, key: String) {
+        self.shopify_api_secret = key;
     }
 
-    // builds a uri for the given shopify shop; when mocking, we spit back the mockito uri
-    pub fn get_shopify_api_uri(&self, shop: String) -> String {
+    // used for mocks; overrides the shopify api domain with a domain that mockito is listening on
+    #[cfg(feature = "mocks")]
+    pub fn set_shopify_api_domain(&mut self, domain: String) {
+        self.shopify_api_domain = Some(domain);
+    }
+
+    // builds a domain for the given shopify shop; when mocking, we spit back the mockito domain
+    pub fn get_shopify_api_url(&self, shop: String) -> String {
         if self.is_mocking {
-            self.shopify_api_uri.clone()
+            format!("{}{}", self.shopify_api_domain.as_ref().unwrap().clone(), self.shopify_api_path.clone())
         } else {
-            format!("{}{}", self.shopify_api_uri.clone(), shop)
+            format!("https://{}{}", shop, self.shopify_api_path.clone())
         }
     }
 
-    // used for mocks; overrides the shopify graphql uri with a uri that mockito is listening on
+    // used for mocks; overrides the shopify graphql domain with a domain that mockito is listening on
     #[cfg(feature = "mocks")]
-    pub fn set_shopify_graphql_path(&mut self, uri: String) {
-        self.shopify_graphql_path = uri;
+    pub fn set_shopify_graphql_domain(&mut self, domain: String) {
+        self.shopify_graphql_domain = Some(domain);
     }
 
-    pub fn get_shopify_graphql_path(&self, shop: String) -> String {
+    pub fn get_shopify_graphql_url(&self, shop: String) -> String {
         if self.is_mocking {
-            self.shopify_graphql_path.clone()
+            format!("{}{}", self.shopify_graphql_domain.as_ref().unwrap().clone(), self.shopify_graphql_path.clone())
         } else {
             format!("https://{}{}", shop, self.shopify_graphql_path.clone())
         }

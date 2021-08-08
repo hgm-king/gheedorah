@@ -30,7 +30,7 @@ pub async fn create_product(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let variables = create_gift_card_product::Variables {};
 
-    let uri = config.get_shopify_graphql_path(params.shop.clone());
+    let uri = config.get_shopify_graphql_url(params.shop.clone());
     let headers = generate_headers(&access_token)?;
     info!("Querying CreateGiftCardProduct at {}", uri);
     let builder = client.request(Method::POST, uri).headers(headers);
@@ -48,7 +48,6 @@ async fn query_graphql<Q: GraphQLQuery>(
     let reqwest_response = builder.json(&body).send().await?;
     Ok(reqwest_response.json().await?)
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -69,27 +68,27 @@ mod tests {
     #[tokio::test]
     async fn it_can_run_create_product_graphql() {
         let shop = String::from("bdrocketstore.myshopify.com");
-        let access_token = String::from("hush");
+        let access_token = String::from("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");
 
         let mut params = mock_params();
         params.shop = shop.clone();
 
-        let mut config = config::generate_config();
-        //config.set_shopify_graphql_path(mockito::server_url());
+        let mut config = config::generate_mocking_config();
+        config.set_shopify_graphql_domain(mockito::server_url());
 
         let client = reqwest::Client::new();
-        // let _m = mockito::mock("POST", "admin/api/2021-07/graphql.json")
-        //     .with_status(200)
-        //     .with_header("content-type", "application/json")
-        //     .with_body(
-        //         "{\"data\":{\"productCreate\":{\"product\":{\"id\":\"gid:\\/\\/shopify\\/Product\/6887020757181\"}}},\"extensions\":{\"cost\":{\"requestedQueryCost\":10,\"actualQueryCost\":10,\"throttleStatus\":{\"maximumAvailable\":1000.0,\"currentlyAvailable\":990,\"restoreRate\":50.0}}}}"
-        //     )
-        //     .create();
+        let _m = mockito::mock("POST", mockito::Matcher::Exact(config.shopify_graphql_path.clone()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                "{\"data\":{\"productCreate\":{\"product\":{\"id\":\"gid:\\/\\/shopify\\/Product\\/6887105790141\"}}},\"extensions\":{\"cost\":{\"requestedQueryCost\":10,\"actualQueryCost\":10,\"throttleStatus\":{\"maximumAvailable\":1000.0,\"currentlyAvailable\":990,\"restoreRate\":50.0}}}}"
+            )
+            .create();
 
         let res = create_product(params, Arc::new(config), Arc::new(client), access_token)
             .await
             .unwrap();
 
-        assert_eq!(res, "gid://shopify/Product/6887016595645");
+        assert_eq!(res, "gid://shopify/Product/6887105790141");
     }
 }

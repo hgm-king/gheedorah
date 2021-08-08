@@ -80,7 +80,7 @@ mod shopify_integration_tests {
         // setup context
         let test_db_url = db_test_url();
         let mut config = Config::new(true);
-        config.set_shopify_api_uri(mockito::server_url());
+        config.set_shopify_api_domain(mockito::server_url());
         config.set_shopify_secret_key(String::from("hush"));
         let arc_config = Arc::new(config);
         let db_conn = Arc::new(DbConn::new(&test_db_url));
@@ -95,7 +95,7 @@ mod shopify_integration_tests {
             NewShopifyIntegration::new(shop_name.to_string(), nonce.to_string());
         new_shopify_integration.insert(&db_conn.get_conn());
         // prep mocks
-        let _m = mock("POST", "/admin/oauth/access_token")
+        let _m = mock("POST", mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(&format!(
@@ -152,7 +152,7 @@ mod shopify_integration_tests {
 
         // setup context
         let mut config = Config::new(true);
-        config.set_shopify_api_uri(mockito::server_url());
+        config.set_shopify_api_domain(mockito::server_url());
         config.set_shopify_secret_key(String::from("hush"));
         let arc_config = Arc::new(config);
         let db_conn = Arc::new(DbConn::new(&db_test_url()));
@@ -169,7 +169,7 @@ mod shopify_integration_tests {
 
         // prep mocks
         gen_uuid.mock_safe(move || MockResult::Return(nonce.to_string()));
-        let _m = mock("POST", "/admin/oauth/access_token")
+        let _m = mock("POST", mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(&format!(
@@ -222,7 +222,7 @@ mod shopify_integration_tests {
 
         // setup context
         let mut config = Config::new(true);
-        config.set_shopify_api_uri(mockito::server_url());
+        config.set_shopify_api_domain(mockito::server_url());
         config.set_shopify_secret_key(String::from("hush"));
         let arc_config = Arc::new(config);
         let db_conn = Arc::new(DbConn::new(&db_test_url()));
@@ -249,7 +249,7 @@ mod shopify_integration_tests {
 
         // prep mocks
         gen_uuid.mock_safe(move || MockResult::Return(nonce.to_string()));
-        let _m = mock("POST", "/admin/oauth/access_token")
+        let _m = mock("POST", mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(&format!(

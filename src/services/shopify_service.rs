@@ -80,7 +80,7 @@ pub async fn update_integration_with_access_token(
         params.code.clone(),
     );
 
-    let uri = config.get_shopify_api_uri(params.shop.clone());
+    let uri = config.get_shopify_api_url(params.shop.clone());
     let access_token_json = fetch_access_token(client.clone(), form_body, uri).await?;
 
     // update the shop here
@@ -121,7 +121,7 @@ async fn fetch_access_token(
     shopify_url: String,
 ) -> Result<AccessTokenResponse, reqwest::Error> {
     let access_token_json: AccessTokenResponse = client
-        .post(format!("{}/admin/oauth/access_token", shopify_url))
+        .post(format!("{}", shopify_url))
         .form(&form_body)
         .send()
         .await?
@@ -249,13 +249,13 @@ mod tests {
         params.state = nonce.clone();
 
         let mut config = generate_mocking_config();
-        config.set_shopify_api_uri(mockito::server_url());
+        config.set_shopify_api_domain(mockito::server_url());
 
         let shop_integration = shopify_integration::NewShopifyIntegration::new(shop.clone(), nonce)
             .insert(&db_conn.get_conn());
 
         let client = reqwest::Client::new();
-        let _m = mockito::mock("POST", "/admin/oauth/access_token")
+        let _m = mockito::mock("POST", mockito::Matcher::Exact(config.shopify_api_path.clone()))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(&format!(
