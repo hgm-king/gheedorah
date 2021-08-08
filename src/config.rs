@@ -8,6 +8,7 @@ pub struct Config {
     pub shopify_api_key: String,
     pub shopify_api_secret: String,
     pub shopify_api_uri: String,
+    pub shopify_graphql_path: String,
     pub shopify_access_scopes: String,
     pub shopify_installation_confirmation_uri: String,
     pub smtp_host: String,
@@ -43,6 +44,8 @@ impl Config {
         let shopify_installation_confirmation_uri =
             String::from("https://localhost:3030/shopify/confirm");
 
+        let shopify_graphql_path = String::from("/admin/api/2021-07/graphql.json");
+
         // mailer variables
         let smtp_host = env::var("SMTP_HOST").expect("SMTP_HOST must be set");
         let smtp_user = env::var("SMTP_USER").expect("SMTP_USER must be set");
@@ -71,6 +74,7 @@ impl Config {
             shopify_api_key,
             shopify_api_secret,
             shopify_api_uri,
+            shopify_graphql_path,
             shopify_access_scopes,
             shopify_installation_confirmation_uri,
             smtp_host,
@@ -105,8 +109,23 @@ impl Config {
             format!("{}{}", self.shopify_api_uri.clone(), shop)
         }
     }
+
+    // used for mocks; overrides the shopify graphql uri with a uri that mockito is listening on
+    #[cfg(feature = "mocks")]
+    pub fn set_shopify_graphql_path(&mut self, uri: String) {
+        self.shopify_graphql_path = uri;
+    }
+
+    pub fn get_shopify_graphql_path(&self, shop: String) -> String {
+        if self.is_mocking {
+            self.shopify_graphql_path.clone()
+        } else {
+            format!("https://{}{}", shop, self.shopify_graphql_path.clone())
+        }
+    }
 }
 
+#[cfg(feature = "mocks")]
 pub fn generate_mocking_config() -> Config {
     Config::new(true)
 }

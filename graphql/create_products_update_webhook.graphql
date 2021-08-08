@@ -1,9 +1,9 @@
 mutation {
   webhookSubscriptionCreate(
-    topic: ORDERS_CREATE
+    topic: PRODUCTS_UPDATE
     webhookSubscription: {
       format: JSON,
-      callbackUrl: "https://77ea1b6b2fea.ngrok.io/shopify/order"}
+      callbackUrl: "https://77ea1b6b2fea.ngrok.io/shopify/product"}
   ) {
     userErrors {
       field

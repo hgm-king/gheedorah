@@ -14,6 +14,7 @@ crypto-mac = "0.11.0"
 diesel = { version = "1.4.4", features = ["chrono", "postgres", "r2d2"] }
 dotenv = "0.15.0"
 env_logger = "0.8.4"
+graphql_client = {version = "0.10.0", features = ['reqwest']}
 hex = "0.4.3"
 hmac = "0.11.0"
 lazy-regex = "2.2.1"

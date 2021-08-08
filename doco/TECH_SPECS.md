@@ -15,6 +15,9 @@ Our API responds with a redirect to a confirmation url which requests to be allo
 User confirms the install
 Our API receives the confirmation and does various checks to validate the request documented in the OAuth Flow
 Our API fetches an Access Token from the store, updating the database entry with the token (the token being present in the database entry signifies a successful installation)
+Our API creates a template product which represents a gift card
+Our API creates a PRODUCTS_UPDATE webhook
+Our API creates a ORDER_CREATE webhook
 ```
 
 #### Related Endpoints

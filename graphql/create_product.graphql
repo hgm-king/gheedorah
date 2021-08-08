@@ -33,9 +33,6 @@ mutation CreateGiftCardProduct {
   {
     product {
       id
-    },
-    userErrors {
-      message
     }
   }
 }
