@@ -1,5 +1,8 @@
 use crate::{
-    config::Config, db_conn::DbConn, models::shopify_integration, services::shopify_service,
+    config::Config,
+    db_conn::DbConn,
+    models::shopify_integration::ShopifyIntegration,
+    services::{shopify_graphql_service, shopify_service},
     ConfirmQueryParams, ErrorMessage, InstallQueryParams,
 };
 use log::{error, info};
@@ -13,24 +16,22 @@ use warp::{
 };
 
 #[derive(Debug)]
-pub struct CreateIntegrationError;
-impl reject::Reject for CreateIntegrationError {}
+pub struct ShopifyError {
+    message: String,
+}
+impl reject::Reject for ShopifyError {}
 
-#[derive(Debug)]
-pub struct InvalidDomainError;
-impl reject::Reject for InvalidDomainError {}
+impl ShopifyError {
+    pub fn new(message: String) -> Self {
+        ShopifyError {
+            message: message,
+        }
+    }
+}
 
-#[derive(Debug)]
-pub struct InvalidHmacError;
-impl reject::Reject for InvalidHmacError {}
-
-#[derive(Debug)]
-pub struct MissingIntegrationError;
-impl reject::Reject for MissingIntegrationError {}
-
-#[derive(Debug)]
-pub struct AccessTokenError;
-impl reject::Reject for AccessTokenError {}
+//
+// shopify/install
+//
 
 pub async fn create_integration_request(
     params: InstallQueryParams,
@@ -40,8 +41,9 @@ pub async fn create_integration_request(
     match shopify_service::create_integration_request(&params, db_conn.clone()) {
         Ok(nonce) => Ok((params, config, db_conn, nonce)),
         Err(_) => {
-            error!("Could not generate install request for {:?}", params);
-            Err(reject::custom(CreateIntegrationError))
+            let message = format!("Could not generate install request for {:?}", params);
+            error!("{}", message);
+            Err(reject::custom(ShopifyError::new(message)))
         }
     }
 }
@@ -61,11 +63,16 @@ pub async fn handle_shopify_installation_request(
         config.shopify_installation_confirmation_uri, // probably want to be config
         nonce,
     );
+
     info!("Redirecting shop {} to uri {}", params.shop, formatted_uri);
     Ok(warp::redirect(
         String::from(formatted_uri).parse::<Uri>().unwrap(),
     ))
 }
+
+//
+// shopify/confirm
+//
 
 pub async fn validate_domain_parameter(
     params: ConfirmQueryParams,
@@ -73,8 +80,9 @@ pub async fn validate_domain_parameter(
     if shopify_service::is_valid_shop_domain(&params) {
         Ok(params)
     } else {
-        error!("Invalid shop parameter for {:?}", params);
-        Err(reject::custom(InvalidDomainError))
+        let message = format!("Invalid shop parameter for {:?}", params);
+        error!("{}", message);
+        Err(reject::custom(ShopifyError::new(message)))
     }
 }
 
@@ -85,8 +93,9 @@ pub async fn validate_hmac(
     match shopify_service::validate_hmac(&params, config.clone()) {
         Ok(_) => Ok((params, config)),
         Err(_) => {
-            error!("Invalid hmac for {:?}", params);
-            Err(reject::custom(InvalidHmacError))
+            let message = format!("Invalid hmac for {:?}", params);
+            error!("{}", message);
+            Err(reject::custom(ShopifyError::new(message)))
         }
     }
 }
@@ -100,15 +109,16 @@ pub async fn find_install_request(
         ConfirmQueryParams,
         Arc<Config>,
         Arc<DbConn>,
-        shopify_integration::ShopifyIntegration,
+        ShopifyIntegration,
     ),
     Rejection,
 > {
     match shopify_service::find_integration_request_from_params(&params, db_conn.clone()) {
         Some(shop_integration) => Ok((params, config, db_conn, shop_integration)),
         None => {
-            error!("Missing install request for {:?}", params);
-            Err(reject::custom(MissingIntegrationError))
+            let message = format!("Missing install request for {:?}", params);
+            error!("{}", message);
+            Err(reject::custom(ShopifyError::new(message)))
         }
     }
 }
@@ -117,15 +127,15 @@ pub async fn update_with_access_token(
     params: ConfirmQueryParams,
     config: Arc<Config>,
     db_conn: Arc<DbConn>,
-    shop_integration: shopify_integration::ShopifyIntegration,
+    shop_integration: ShopifyIntegration,
     client: Arc<Client>,
 ) -> Result<
     (
         ConfirmQueryParams,
         Arc<Config>,
         Arc<DbConn>,
-        shopify_integration::ShopifyIntegration,
         Arc<Client>,
+        String,
     ),
     Rejection,
 > {
@@ -138,20 +148,41 @@ pub async fn update_with_access_token(
     )
     .await
     {
-        Ok(_) => Ok((params, config, db_conn, shop_integration, client)),
+        Ok(access_token) => Ok((params, config, db_conn, client, access_token)),
         Err(_) => {
-            error!("Could not fetch access token for {:?}", params);
-            Err(reject::custom(AccessTokenError))
+            let message = format!("Could not fetch access token for {:?}", params);
+            error!("{}", message);
+            Err(reject::custom(ShopifyError::new(message)))
+        }
+    }
+}
+
+pub async fn create_shopify_product(
+    params: ConfirmQueryParams,
+    config: Arc<Config>,
+    _db_conn: Arc<DbConn>,
+    client: Arc<Client>,
+    access_token: String,
+) -> Result<ConfirmQueryParams, Rejection> {
+    match shopify_graphql_service::create_product(
+        &params,
+        config.clone(),
+        client.clone(),
+        access_token,
+    )
+    .await
+    {
+        Ok(_) => Ok(params),
+        Err(_) => {
+            let message = format!("Could not create Gift Card Product for {:?}", params);
+            error!("{}", message);
+            Err(reject::custom(ShopifyError::new(message)))
         }
     }
 }
 
 pub async fn handle_shopify_installation_confirmation(
     params: ConfirmQueryParams,
-    _config: Arc<Config>,
-    _db_conn: Arc<DbConn>,
-    _shop_integration: shopify_integration::ShopifyIntegration,
-    _client: Arc<Client>,
 ) -> Result<impl Reply, Rejection> {
     info!(
         "Successfully installed by shop {}; redirecting to uri /",
@@ -182,11 +213,9 @@ pub async fn shopify_handle_rejection(err: Rejection) -> Result<impl Reply, Infa
         // and render it however we want
         code = StatusCode::METHOD_NOT_ALLOWED;
         message = "METHOD_NOT_ALLOWED";
-    } else if let Some(_) = err.find::<InvalidDomainError>() {
-        // We can handle a specific error, here METHOD_NOT_ALLOWED,
-        // and render it however we want
+    } else if let Some(err) = err.find::<ShopifyError>() {
         code = StatusCode::BAD_REQUEST;
-        message = "INVALID_DOMAIN";
+        message = &err.message;
     } else {
         // We should have expected this... Just log and say its a 500
         error!("unhandled rejection: {:?}", err);

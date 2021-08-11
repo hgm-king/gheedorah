@@ -1,10 +1,10 @@
-use crate::{config::Config, AccessTokenResponse, ConfirmQueryParams, InstallQueryParams};
+use crate::{config::Config, ConfirmQueryParams};
+use graphql_client::{GraphQLQuery, Response};
 use log::info;
-use graphql_client::{GraphQLQuery,Response};
-use warp::http::Method;
 use reqwest::{header, Client};
 use std::error::Error;
 use std::sync::Arc;
+use warp::http::Method;
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -23,7 +23,7 @@ fn generate_headers(access_token: &str) -> Result<header::HeaderMap, Box<dyn Err
 }
 
 pub async fn create_product(
-    params: ConfirmQueryParams,
+    params: &ConfirmQueryParams,
     config: Arc<Config>,
     client: Arc<Client>,
     access_token: String,
@@ -85,7 +85,7 @@ mod tests {
             )
             .create();
 
-        let res = create_product(params, Arc::new(config), Arc::new(client), access_token)
+        let res = create_product(&params, Arc::new(config), Arc::new(client), access_token)
             .await
             .unwrap();
 

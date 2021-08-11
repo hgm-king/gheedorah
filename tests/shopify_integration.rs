@@ -80,7 +80,7 @@ mod shopify_integration_tests {
         // setup context
         let test_db_url = db_test_url();
         let mut config = Config::new(true);
-        config.set_shopify_api_domain(mockito::server_url());
+        config.set_mocked_server_uri(mockito::server_url());
         config.set_shopify_secret_key(String::from("hush"));
         let arc_config = Arc::new(config);
         let db_conn = Arc::new(DbConn::new(&test_db_url));
@@ -95,14 +95,27 @@ mod shopify_integration_tests {
             NewShopifyIntegration::new(shop_name.to_string(), nonce.to_string());
         new_shopify_integration.insert(&db_conn.get_conn());
         // prep mocks
-        let _m = mock("POST", mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(&format!(
-                "{{\"access_token\": \"{}\",\"scope\": \"write_orders,read_customers\"}}",
-                access_token
-            ))
-            .create();
+        let _m = mock(
+            "POST",
+            mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()),
+        )
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(&format!(
+            "{{\"access_token\": \"{}\",\"scope\": \"write_orders,read_customers\"}}",
+            access_token
+        ))
+        .create();
+
+        let _m2 = mock(
+            "POST",
+            mockito::Matcher::Exact(arc_config.clone().shopify_graphql_path.clone()),
+        )
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        //.with_body(include_str!("stubbed-product-create.json"))
+        .with_body("{\"data\":{\"productCreate\":{\"product\":{\"id\":\"gid:\\/\\/shopify\\/Product\\/6887105790141\"}}},\"extensions\":{\"cost\":{\"requestedQueryCost\":10,\"actualQueryCost\":10,\"throttleStatus\":{\"maximumAvailable\":1000.0,\"currentlyAvailable\":990,\"restoreRate\":50.0}}}}")
+        .create();
 
         let res = warp::test::request()
             .method("GET")
@@ -152,7 +165,7 @@ mod shopify_integration_tests {
 
         // setup context
         let mut config = Config::new(true);
-        config.set_shopify_api_domain(mockito::server_url());
+        config.set_mocked_server_uri(mockito::server_url());
         config.set_shopify_secret_key(String::from("hush"));
         let arc_config = Arc::new(config);
         let db_conn = Arc::new(DbConn::new(&db_test_url()));
@@ -169,14 +182,27 @@ mod shopify_integration_tests {
 
         // prep mocks
         gen_uuid.mock_safe(move || MockResult::Return(nonce.to_string()));
-        let _m = mock("POST", mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(&format!(
-                "{{\"access_token\": \"{}\",\"scope\": \"write_orders,read_customers\"}}",
-                access_token
-            ))
-            .create();
+        let _m = mock(
+            "POST",
+            mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()),
+        )
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(&format!(
+            "{{\"access_token\": \"{}\",\"scope\": \"write_orders,read_customers\"}}",
+            access_token
+        ))
+        .create();
+
+        let _m2 = mock(
+            "POST",
+            mockito::Matcher::Exact(arc_config.clone().shopify_graphql_path.clone()),
+        )
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        //.with_body(include_str!("stubbed-product-create.json"))
+        .with_body("{\"data\":{\"productCreate\":{\"product\":{\"id\":\"gid:\\/\\/shopify\\/Product\\/6887105790141\"}}},\"extensions\":{\"cost\":{\"requestedQueryCost\":10,\"actualQueryCost\":10,\"throttleStatus\":{\"maximumAvailable\":1000.0,\"currentlyAvailable\":990,\"restoreRate\":50.0}}}}")
+        .create();
 
         // first send off message to install the app
         let install_res = warp::test::request()
@@ -222,7 +248,7 @@ mod shopify_integration_tests {
 
         // setup context
         let mut config = Config::new(true);
-        config.set_shopify_api_domain(mockito::server_url());
+        config.set_mocked_server_uri(mockito::server_url());
         config.set_shopify_secret_key(String::from("hush"));
         let arc_config = Arc::new(config);
         let db_conn = Arc::new(DbConn::new(&db_test_url()));
@@ -249,14 +275,27 @@ mod shopify_integration_tests {
 
         // prep mocks
         gen_uuid.mock_safe(move || MockResult::Return(nonce.to_string()));
-        let _m = mock("POST", mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(&format!(
-                "{{\"access_token\": \"{}\",\"scope\": \"write_orders,read_customers\"}}",
-                access_token
-            ))
-            .create();
+        let _m = mock(
+            "POST",
+            mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()),
+        )
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(&format!(
+            "{{\"access_token\": \"{}\",\"scope\": \"write_orders,read_customers\"}}",
+            access_token
+        ))
+        .create();
+
+        let _m2 = mock(
+            "POST",
+            mockito::Matcher::Exact(arc_config.clone().shopify_graphql_path.clone()),
+        )
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        //.with_body(include_str!("stubbed-product-create.json"))
+        .with_body("{\"data\":{\"productCreate\":{\"product\":{\"id\":\"gid:\\/\\/shopify\\/Product\\/6887105790141\"}}},\"extensions\":{\"cost\":{\"requestedQueryCost\":10,\"actualQueryCost\":10,\"throttleStatus\":{\"maximumAvailable\":1000.0,\"currentlyAvailable\":990,\"restoreRate\":50.0}}}}")
+        .create();
 
         // the user clicks the request button again
         let _res = warp::test::request()

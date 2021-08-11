@@ -71,7 +71,7 @@ pub async fn update_integration_with_access_token(
     db_conn: Arc<DbConn>,
     shop_integration: &shopify_integration::ShopifyIntegration,
     client: Arc<Client>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<String, Box<dyn Error>> {
     let conn = db_conn.get_conn();
 
     let form_body = form_body_from_args(
@@ -83,14 +83,12 @@ pub async fn update_integration_with_access_token(
     let uri = config.get_shopify_api_url(params.shop.clone());
     let access_token_json = fetch_access_token(client.clone(), form_body, uri).await?;
 
-    // update the shop here
-    shopify_integration::update_access_token(
-        &conn,
-        shop_integration,
-        access_token_json.access_token,
-    )?;
+    let access_token = access_token_json.access_token;
 
-    Ok(())
+    // update the shop here
+    shopify_integration::update_access_token(&conn, shop_integration, access_token.clone())?;
+
+    Ok(access_token)
 }
 
 // to verify the hmac, we need to turn the query params into the following shape
@@ -255,14 +253,17 @@ mod tests {
             .insert(&db_conn.get_conn());
 
         let client = reqwest::Client::new();
-        let _m = mockito::mock("POST", mockito::Matcher::Exact(config.shopify_api_path.clone()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(&format!(
-                "{{\"access_token\": \"{}\",\"scope\": \"write_orders,read_customers\"}}",
-                access_token
-            ))
-            .create();
+        let _m = mockito::mock(
+            "POST",
+            mockito::Matcher::Exact(config.shopify_api_path.clone()),
+        )
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(&format!(
+            "{{\"access_token\": \"{}\",\"scope\": \"write_orders,read_customers\"}}",
+            access_token
+        ))
+        .create();
 
         let res = update_integration_with_access_token(
             &params,

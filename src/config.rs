@@ -99,6 +99,14 @@ impl Config {
     // used for mocks; during shopify hmac validation testing, we need to hardcode a
     // result that depends on this value
     #[cfg(feature = "mocks")]
+    pub fn set_mocked_server_uri(&mut self, domain: String) {
+        self.set_shopify_api_domain(domain.clone());
+        self.set_shopify_graphql_domain(domain);
+    }
+
+    // used for mocks; during shopify hmac validation testing, we need to hardcode a
+    // result that depends on this value
+    #[cfg(feature = "mocks")]
     pub fn set_shopify_secret_key(&mut self, key: String) {
         self.shopify_api_secret = key;
     }
@@ -112,7 +120,11 @@ impl Config {
     // builds a domain for the given shopify shop; when mocking, we spit back the mockito domain
     pub fn get_shopify_api_url(&self, shop: String) -> String {
         if self.is_mocking {
-            format!("{}{}", self.shopify_api_domain.as_ref().unwrap().clone(), self.shopify_api_path.clone())
+            format!(
+                "{}{}",
+                self.shopify_api_domain.as_ref().unwrap().clone(),
+                self.shopify_api_path.clone()
+            )
         } else {
             format!("https://{}{}", shop, self.shopify_api_path.clone())
         }
@@ -126,7 +138,11 @@ impl Config {
 
     pub fn get_shopify_graphql_url(&self, shop: String) -> String {
         if self.is_mocking {
-            format!("{}{}", self.shopify_graphql_domain.as_ref().unwrap().clone(), self.shopify_graphql_path.clone())
+            format!(
+                "{}{}",
+                self.shopify_graphql_domain.as_ref().unwrap().clone(),
+                self.shopify_graphql_path.clone()
+            )
         } else {
             format!("https://{}{}", shop, self.shopify_graphql_path.clone())
         }

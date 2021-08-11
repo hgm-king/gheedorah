@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 pub struct EmailClient {
     mailer: SmtpTransport,
-    is_mocking: bool,
 }
 
 impl EmailClient {
@@ -24,7 +23,7 @@ impl EmailClient {
                 .build()
         };
 
-        EmailClient { mailer, is_mocking }
+        EmailClient { mailer }
     }
 
     pub fn send_email(
