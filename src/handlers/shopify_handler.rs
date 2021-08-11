@@ -23,9 +23,7 @@ impl reject::Reject for ShopifyError {}
 
 impl ShopifyError {
     pub fn new(message: String) -> Self {
-        ShopifyError {
-            message: message,
-        }
+        ShopifyError { message: message }
     }
 }
 
