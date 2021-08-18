@@ -158,19 +158,25 @@ pub async fn update_with_access_token(
 pub async fn create_shopify_product(
     params: ConfirmQueryParams,
     config: Arc<Config>,
-    _db_conn: Arc<DbConn>,
+    db_conn: Arc<DbConn>,
     client: Arc<Client>,
     access_token: String,
-) -> Result<ConfirmQueryParams, Rejection> {
+) -> Result<(
+    ConfirmQueryParams,
+    Arc<Config>,
+    Arc<DbConn>,
+    Arc<Client>,
+    String,
+), Rejection> {
     match shopify_graphql_service::create_product(
         &params,
         config.clone(),
         client.clone(),
-        access_token,
+        access_token.clone(),
     )
     .await
     {
-        Ok(_) => Ok(params),
+        Ok(_) => Ok((params, config, db_conn, client, access_token)),
         Err(_) => {
             let message = format!("Could not create Gift Card Product for {:?}", params);
             error!("{}", message);
@@ -179,8 +185,72 @@ pub async fn create_shopify_product(
     }
 }
 
+pub async fn create_shopify_products_webhook(
+    params: ConfirmQueryParams,
+    config: Arc<Config>,
+    db_conn: Arc<DbConn>,
+    client: Arc<Client>,
+    access_token: String,
+) -> Result<(
+    ConfirmQueryParams,
+    Arc<Config>,
+    Arc<DbConn>,
+    Arc<Client>,
+    String,
+), Rejection> {
+    match shopify_graphql_service::create_products_webhook(
+        &params,
+        config.clone(),
+        client.clone(),
+        access_token.clone(),
+    )
+    .await
+    {
+        Ok(_) => Ok((params, config, db_conn, client, access_token)),
+        Err(_) => {
+            let message = format!("Could not create Products Webhook for {:?}", params);
+            error!("{}", message);
+            Err(reject::custom(ShopifyError::new(message)))
+        }
+    }
+}
+
+pub async fn create_shopify_orders_webhook(
+    params: ConfirmQueryParams,
+    config: Arc<Config>,
+    db_conn: Arc<DbConn>,
+    client: Arc<Client>,
+    access_token: String,
+) -> Result<(
+    ConfirmQueryParams,
+    Arc<Config>,
+    Arc<DbConn>,
+    Arc<Client>,
+    String,
+), Rejection> {
+    match shopify_graphql_service::create_orders_webhook(
+        &params,
+        config.clone(),
+        client.clone(),
+        access_token.clone(),
+    )
+    .await
+    {
+        Ok(_) => Ok((params, config, db_conn, client, access_token)),
+        Err(_) => {
+            let message = format!("Could not create Orders Webhook for {:?}", params);
+            error!("{}", message);
+            Err(reject::custom(ShopifyError::new(message)))
+        }
+    }
+}
+
 pub async fn handle_shopify_installation_confirmation(
     params: ConfirmQueryParams,
+    _config: Arc<Config>,
+    _db_conn: Arc<DbConn>,
+    _client: Arc<Client>,
+    _access_token: String,
 ) -> Result<impl Reply, Rejection> {
     info!(
         "Successfully installed by shop {}; redirecting to uri /",

@@ -32,7 +32,13 @@ pub fn shopify_confirm(
     config: Arc<Config>,
     db_conn: Arc<DbConn>,
     client: Arc<Client>,
-) -> BoxedFilter<(ConfirmQueryParams,)> {
+) -> BoxedFilter<(
+    ConfirmQueryParams,
+    Arc<Config>,
+    Arc<DbConn>,
+    Arc<Client>,
+    String,
+)> {
     warp::get()
         .and(confirmation_path())
         .and(warp::query::query::<ConfirmQueryParams>())
@@ -47,5 +53,10 @@ pub fn shopify_confirm(
         .and_then(shopify_handler::update_with_access_token)
         .untuple_one()
         .and_then(shopify_handler::create_shopify_product)
+        .untuple_one()
+        .and_then(shopify_handler::create_shopify_products_webhook)
+        .untuple_one()
+        .and_then(shopify_handler::create_shopify_orders_webhook)
+        .untuple_one()
         .boxed()
 }
