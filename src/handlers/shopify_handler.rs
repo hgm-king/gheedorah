@@ -52,7 +52,7 @@ pub async fn handle_shopify_installation_request(
     _db_conn: Arc<DbConn>,
     nonce: String,
 ) -> Result<impl Reply, Rejection> {
-    // uri for the conform install page
+    // uri for the confirm install page
     let formatted_uri = format!(
         "https://{}/admin/oauth/authorize?client_id={}&scope={}&redirect_uri={}&state={}",
         params.shop,
@@ -161,13 +161,16 @@ pub async fn create_shopify_product(
     db_conn: Arc<DbConn>,
     client: Arc<Client>,
     access_token: String,
-) -> Result<(
-    ConfirmQueryParams,
-    Arc<Config>,
-    Arc<DbConn>,
-    Arc<Client>,
-    String,
-), Rejection> {
+) -> Result<
+    (
+        ConfirmQueryParams,
+        Arc<Config>,
+        Arc<DbConn>,
+        Arc<Client>,
+        String,
+    ),
+    Rejection,
+> {
     match shopify_graphql_service::create_product(
         &params,
         config.clone(),
@@ -191,13 +194,16 @@ pub async fn create_shopify_products_webhook(
     db_conn: Arc<DbConn>,
     client: Arc<Client>,
     access_token: String,
-) -> Result<(
-    ConfirmQueryParams,
-    Arc<Config>,
-    Arc<DbConn>,
-    Arc<Client>,
-    String,
-), Rejection> {
+) -> Result<
+    (
+        ConfirmQueryParams,
+        Arc<Config>,
+        Arc<DbConn>,
+        Arc<Client>,
+        String,
+    ),
+    Rejection,
+> {
     match shopify_graphql_service::create_products_webhook(
         &params,
         config.clone(),
@@ -221,13 +227,16 @@ pub async fn create_shopify_orders_webhook(
     db_conn: Arc<DbConn>,
     client: Arc<Client>,
     access_token: String,
-) -> Result<(
-    ConfirmQueryParams,
-    Arc<Config>,
-    Arc<DbConn>,
-    Arc<Client>,
-    String,
-), Rejection> {
+) -> Result<
+    (
+        ConfirmQueryParams,
+        Arc<Config>,
+        Arc<DbConn>,
+        Arc<Client>,
+        String,
+    ),
+    Rejection,
+> {
     match shopify_graphql_service::create_orders_webhook(
         &params,
         config.clone(),

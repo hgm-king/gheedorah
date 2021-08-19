@@ -182,9 +182,10 @@ mod tests {
             )
             .create();
 
-        let res = create_products_webhook(&params, Arc::new(config), Arc::new(client), access_token)
-            .await
-            .unwrap();
+        let res =
+            create_products_webhook(&params, Arc::new(config), Arc::new(client), access_token)
+                .await
+                .unwrap();
 
         assert_eq!(res, "gid://shopify/WebhookSubscription/1055293472957");
     }
