@@ -1,4 +1,4 @@
-query {
+query WebhookSubscriptions {
   webhookSubscriptions(first: 10) {
     edges {
       node {
