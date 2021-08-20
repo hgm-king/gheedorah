@@ -67,7 +67,7 @@ pub async fn create_products_webhook(
     access_token: String,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let variables = create_products_webhook::Variables {
-        callback_url: config.shopify.get_product_webhook_uri()
+        callback_url: config.shopify.get_product_webhook_uri(),
     };
 
     let uri = config.shopify.get_graphql_url(params.shop.clone());
@@ -95,7 +95,7 @@ pub async fn create_orders_webhook(
     access_token: String,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let variables = create_orders_webhook::Variables {
-        callback_url: config.shopify.get_order_webhook_uri()
+        callback_url: config.shopify.get_order_webhook_uri(),
     };
 
     let uri = config.shopify.get_graphql_url(params.shop.clone());
