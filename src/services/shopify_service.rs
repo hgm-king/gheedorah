@@ -33,7 +33,7 @@ pub fn validate_hmac(
     params: &ConfirmQueryParams,
     config: Arc<Config>,
 ) -> Result<(), crypto_mac::MacError> {
-    let secret_bytes = &config.shopify_api_secret.as_bytes();
+    let secret_bytes = &config.shopify.api_secret.as_bytes();
     let mut mac = Hmac::<Sha256>::new_from_slice(secret_bytes).map_err(|_| crypto_mac::MacError)?;
 
     let params_code = convert_query_params_to_hmac_code(&params);
@@ -75,12 +75,12 @@ pub async fn update_integration_with_access_token(
     let conn = db_conn.get_conn();
 
     let form_body = form_body_from_args(
-        config.shopify_api_key.clone(),
-        config.shopify_api_secret.clone(),
+        config.shopify.api_key.clone(),
+        config.shopify.api_secret.clone(),
         params.code.clone(),
     );
 
-    let uri = config.get_shopify_api_url(params.shop.clone());
+    let uri = config.shopify.get_api_url(params.shop.clone());
     let access_token_json = fetch_access_token(client.clone(), form_body, uri).await?;
 
     let access_token = access_token_json.access_token;
@@ -199,7 +199,7 @@ mod tests {
     #[test]
     fn it_validates_valid_hmac() {
         let mut config = generate_mocking_config();
-        config.set_shopify_secret_key(String::from("hush"));
+        config.shopify.set_secret_key(String::from("hush"));
         let params = mock_params();
 
         assert!(validate_hmac(&params, Arc::new(config)).is_ok());
@@ -208,7 +208,7 @@ mod tests {
     #[test]
     fn it_doesnt_validates_invalid_hmac() {
         let mut config = generate_mocking_config();
-        config.set_shopify_secret_key(String::from("loud"));
+        config.shopify.set_secret_key(String::from("loud"));
         let params = mock_params();
 
         assert!(validate_hmac(&params, Arc::new(config)).is_err());
@@ -247,7 +247,7 @@ mod tests {
         params.state = nonce.clone();
 
         let mut config = generate_mocking_config();
-        config.set_shopify_api_domain(mockito::server_url());
+        config.shopify.set_api_domain(mockito::server_url());
 
         let shop_integration = shopify_integration::NewShopifyIntegration::new(shop.clone(), nonce)
             .insert(&db_conn.get_conn());
@@ -255,7 +255,7 @@ mod tests {
         let client = reqwest::Client::new();
         let _m = mockito::mock(
             "POST",
-            mockito::Matcher::Exact(config.shopify_api_path.clone()),
+            mockito::Matcher::Exact(config.shopify.api_path.clone()),
         )
         .with_status(200)
         .with_header("content-type", "application/json")

@@ -46,7 +46,7 @@ pub async fn create_product(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let variables = create_gift_card_product::Variables {};
 
-    let uri = config.get_shopify_graphql_url(params.shop.clone());
+    let uri = config.shopify.get_graphql_url(params.shop.clone());
     let headers = generate_headers(&access_token)?;
     let builder = client.request(Method::POST, uri).headers(headers);
 
@@ -66,7 +66,7 @@ pub async fn create_products_webhook(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let variables = create_products_webhook::Variables {};
 
-    let uri = config.get_shopify_graphql_url(params.shop.clone());
+    let uri = config.shopify.get_graphql_url(params.shop.clone());
     let headers = generate_headers(&access_token)?;
 
     let builder = client.request(Method::POST, uri).headers(headers);
@@ -92,7 +92,7 @@ pub async fn create_orders_webhook(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let variables = create_orders_webhook::Variables {};
 
-    let uri = config.get_shopify_graphql_url(params.shop.clone());
+    let uri = config.shopify.get_graphql_url(params.shop.clone());
     let headers = generate_headers(&access_token)?;
 
     let builder = client.request(Method::POST, uri).headers(headers);
@@ -144,10 +144,10 @@ mod tests {
         params.shop = shop.clone();
 
         let mut config = config::generate_mocking_config();
-        config.set_shopify_graphql_domain(mockito::server_url());
+        config.shopify.set_graphql_domain(mockito::server_url());
 
         let client = reqwest::Client::new();
-        let _m = mockito::mock("POST", mockito::Matcher::Exact(config.shopify_graphql_path.clone()))
+        let _m = mockito::mock("POST", mockito::Matcher::Exact(config.shopify.graphql_path.clone()))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(
@@ -171,10 +171,10 @@ mod tests {
         params.shop = shop.clone();
 
         let mut config = config::generate_mocking_config();
-        config.set_shopify_graphql_domain(mockito::server_url());
+        config.shopify.set_graphql_domain(mockito::server_url());
 
         let client = reqwest::Client::new();
-        let _m = mockito::mock("POST", mockito::Matcher::Exact(config.shopify_graphql_path.clone()))
+        let _m = mockito::mock("POST", mockito::Matcher::Exact(config.shopify.graphql_path.clone()))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(
@@ -199,10 +199,10 @@ mod tests {
         params.shop = shop.clone();
 
         let mut config = config::generate_mocking_config();
-        config.set_shopify_graphql_domain(mockito::server_url());
+        config.shopify.set_graphql_domain(mockito::server_url());
 
         let client = reqwest::Client::new();
-        let _m = mockito::mock("POST", mockito::Matcher::Exact(config.shopify_graphql_path.clone()))
+        let _m = mockito::mock("POST", mockito::Matcher::Exact(config.shopify.graphql_path.clone()))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(

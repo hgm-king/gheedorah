@@ -80,8 +80,8 @@ mod shopify_integration_tests {
         // setup context
         let test_db_url = db_test_url();
         let mut config = Config::new(true);
-        config.set_mocked_server_uri(mockito::server_url());
-        config.set_shopify_secret_key(String::from("hush"));
+        config.shopify.set_mocked_server_uri(mockito::server_url());
+        config.shopify.set_secret_key(String::from("hush"));
         let arc_config = Arc::new(config);
         let db_conn = Arc::new(DbConn::new(&test_db_url));
         let client = Arc::new(reqwest::Client::new());
@@ -97,7 +97,7 @@ mod shopify_integration_tests {
         // prep mocks
         let _m = mock(
             "POST",
-            mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()),
+            mockito::Matcher::Exact(arc_config.clone().shopify.api_path.clone()),
         )
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -109,7 +109,7 @@ mod shopify_integration_tests {
 
         let _m2 = mock(
             "POST",
-            mockito::Matcher::Exact(arc_config.clone().shopify_graphql_path.clone()),
+            mockito::Matcher::Exact(arc_config.clone().shopify.graphql_path.clone()),
         )
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -165,8 +165,8 @@ mod shopify_integration_tests {
 
         // setup context
         let mut config = Config::new(true);
-        config.set_mocked_server_uri(mockito::server_url());
-        config.set_shopify_secret_key(String::from("hush"));
+        config.shopify.set_mocked_server_uri(mockito::server_url());
+        config.shopify.set_secret_key(String::from("hush"));
         let arc_config = Arc::new(config);
         let db_conn = Arc::new(DbConn::new(&db_test_url()));
         let client = Arc::new(reqwest::Client::new());
@@ -184,7 +184,7 @@ mod shopify_integration_tests {
         gen_uuid.mock_safe(move || MockResult::Return(nonce.to_string()));
         let _m = mock(
             "POST",
-            mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()),
+            mockito::Matcher::Exact(arc_config.clone().shopify.api_path.clone()),
         )
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -196,7 +196,7 @@ mod shopify_integration_tests {
 
         let _m2 = mock(
             "POST",
-            mockito::Matcher::Exact(arc_config.clone().shopify_graphql_path.clone()),
+            mockito::Matcher::Exact(arc_config.clone().shopify.graphql_path.clone()),
         )
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -248,8 +248,8 @@ mod shopify_integration_tests {
 
         // setup context
         let mut config = Config::new(true);
-        config.set_mocked_server_uri(mockito::server_url());
-        config.set_shopify_secret_key(String::from("hush"));
+        config.shopify.set_mocked_server_uri(mockito::server_url());
+        config.shopify.set_secret_key(String::from("hush"));
         let arc_config = Arc::new(config);
         let db_conn = Arc::new(DbConn::new(&db_test_url()));
         let client = Arc::new(reqwest::Client::new());
@@ -277,7 +277,7 @@ mod shopify_integration_tests {
         gen_uuid.mock_safe(move || MockResult::Return(nonce.to_string()));
         let _m = mock(
             "POST",
-            mockito::Matcher::Exact(arc_config.clone().shopify_api_path.clone()),
+            mockito::Matcher::Exact(arc_config.clone().shopify.api_path.clone()),
         )
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -289,7 +289,7 @@ mod shopify_integration_tests {
 
         let _m2 = mock(
             "POST",
-            mockito::Matcher::Exact(arc_config.clone().shopify_graphql_path.clone()),
+            mockito::Matcher::Exact(arc_config.clone().shopify.graphql_path.clone()),
         )
         .with_status(200)
         .with_header("content-type", "application/json")

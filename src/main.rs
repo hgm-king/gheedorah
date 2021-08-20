@@ -11,6 +11,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use warp::Filter;
 
+// we need this to be able to use our route macros
 pub mod api;
 
 #[tokio::main]
@@ -24,14 +25,16 @@ async fn main() {
     let client = Arc::new(reqwest::Client::new());
     let _mailer = Arc::new(email_service::mock_email_client(config.clone()));
 
-    // compose our routes and handlers
+    // configure and compose our routes and handlers
     let shopify =
         shopify!(config.clone(), db_conn.clone(), client.clone()).with(warp::log("shopify"));
     let shopify_order = shopify_order!();
     let shopify_product = shopify_product!();
-    // removing the shopify integration endpoint for now
+
+    // this will log a 404 for each missed route, which is annoying
     let end = health!().or(shopify_order).or(shopify_product).or(shopify);
 
+    // setup our address from the config
     let socket_address = config
         .clone()
         .app_addr
@@ -43,6 +46,7 @@ async fn main() {
     if config.clone().tls {
         info!("🔐 TLS Enabled!");
 
+        // serve over tls if config says so
         warp::serve(end)
             .tls()
             .cert_path(config.clone().cert_path.as_ref().unwrap())
@@ -50,6 +54,7 @@ async fn main() {
             .run(socket_address)
             .await;
     } else {
+        // otherwise serve normally
         warp::serve(end).run(socket_address).await;
     }
 }

@@ -54,11 +54,12 @@ pub async fn handle_shopify_installation_request(
 ) -> Result<impl Reply, Rejection> {
     // uri for the confirm install page
     let formatted_uri = format!(
-        "https://{}/admin/oauth/authorize?client_id={}&scope={}&redirect_uri={}&state={}",
+        "https://{}{}?client_id={}&scope={}&redirect_uri={}&state={}",
         params.shop,
-        config.shopify_api_key,
-        config.shopify_access_scopes,
-        config.shopify_installation_confirmation_uri, // probably want to be config
+        config.shopify.install_redirect_path,
+        config.shopify.api_key,
+        config.shopify.access_scopes,
+        config.shopify.get_confirm_uri(),
         nonce,
     );
 
