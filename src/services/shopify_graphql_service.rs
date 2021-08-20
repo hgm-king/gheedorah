@@ -6,6 +6,8 @@ use std::error::Error;
 use std::sync::Arc;
 use warp::http::Method;
 
+type URL = String;
+
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "graphql/shopify_schema.graphql",
@@ -64,7 +66,9 @@ pub async fn create_products_webhook(
     client: Arc<Client>,
     access_token: String,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let variables = create_products_webhook::Variables {};
+    let variables = create_products_webhook::Variables {
+        callback_url: config.shopify.get_product_webhook_uri()
+    };
 
     let uri = config.shopify.get_graphql_url(params.shop.clone());
     let headers = generate_headers(&access_token)?;
@@ -90,7 +94,9 @@ pub async fn create_orders_webhook(
     client: Arc<Client>,
     access_token: String,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let variables = create_orders_webhook::Variables {};
+    let variables = create_orders_webhook::Variables {
+        callback_url: config.shopify.get_order_webhook_uri()
+    };
 
     let uri = config.shopify.get_graphql_url(params.shop.clone());
     let headers = generate_headers(&access_token)?;

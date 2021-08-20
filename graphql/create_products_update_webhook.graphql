@@ -1,9 +1,10 @@
-mutation CreateProductsWebhook {
+mutation CreateProductsWebhook($callbackUrl: URL!) {
   webhookSubscriptionCreate(
     topic: PRODUCTS_UPDATE
     webhookSubscription: {
       format: JSON,
-      callbackUrl: "https://77ea1b6b2fea.ngrok.io/shopify/product"}
+      callbackUrl: $callbackUrl
+    }
   ) {
     userErrors {
       field
